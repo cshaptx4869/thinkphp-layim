@@ -1,0 +1,302 @@
+{extend name="common" /}
+
+{block name="content"}
+<body class="layui-layout-body">
+<div id="LAY_app">
+  <div class="layui-layout layui-layout-admin">
+    <!-- 头部区域 -->
+    {include file="base/header" /}
+    <!-- 侧边菜单 -->
+    {include file="base/side" /}
+    <!-- 页面标签 -->
+    {include file="base/pagetabs" /}
+    <!-- 主体内容 -->
+    <div class="layui-body" id="LAY_app_body">
+      <div class="layadmin-tabsbody-item layui-show">
+        <iframe src="home/console.html" frameborder="0" class="layadmin-iframe"></iframe>
+      </div>
+    </div>
+    <!-- 辅助元素，一般用于移动设备下遮罩 -->
+    <div class="layadmin-body-shade" layadmin-event="shade"></div>
+  </div>
+</div>
+</body>
+{/block}
+
+{block name="js"}
+<script>
+    let skin = '{$skin}';
+    let socketName = '{$socket_name}';
+    layui.extend({
+        index: 'lib/index', //主入口模块，会追加base到modules目录
+    }).use(['index', 'jquery', 'layim', 'layer'], function () {
+        let $ = layui.jquery,
+            layim = layui.layim,
+            layer = layui.layer,
+            //注意：如果要兼容ie8+，建议你采用 socket.io 的版本
+            socket = new WebSocket(socketName),
+            msg = {
+                success: function (msg, callback) {
+                    if (callback === undefined) {
+                        callback = function () {
+                        }
+                    }
+                    return layer.msg(msg, {
+                        icon: 1,
+                        shade: [0.02, '#000'],
+                        scrollbar: false,
+                        time: 2000,
+                        shadeClose: true
+                    }, callback);
+                },
+                error: function (msg, callback) {
+                    if (callback === undefined) {
+                        callback = function () {
+                        }
+                    }
+                    return layer.msg(msg, {
+                        icon: 2,
+                        shade: [0.02, '#000'],
+                        scrollbar: false,
+                        time: 3000,
+                        shadeClose: true
+                    }, callback);
+                }
+            },
+            request = {
+                post: function (option, ok, no, ex) {
+                    return this.ajax('post', option, ok, no, ex);
+                },
+                get: function (option, ok, no, ex) {
+                    return this.ajax('get', option, ok, no, ex);
+                },
+                ajax: function (type, option, ok, no, ex) {
+                    type = type || 'get';
+                    option.url = option.url || '';
+                    option.data = option.data || {};
+                    option.prefix = option.prefix || false;
+                    option.statusName = option.statusName || 'code';
+                    option.statusCode = option.statusCode || 0;
+                    ok = ok || function (res) {
+                    };
+                    no = no || function (res) {
+                        msg.error(res.msg == undefined ? '返回数据格式有误' : res.msg);
+                        return false;
+                    };
+                    ex = ex || function (res) {
+                    };
+                    if (option.url == '') {
+                        msg.error('请求地址不能为空');
+                        return false;
+                    }
+                    $.ajax({
+                        url: option.url,
+                        type: type,
+                        contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+                        dataType: "json",
+                        data: option.data,
+                        timeout: 60000,
+                        success: function (res) {
+                            if (res[option.statusName] == option.statusCode) {
+                                return ok(res);
+                            } else {
+                                return no(res);
+                            }
+                        },
+                        error: function (xhr, textstatus, thrown) {
+                            msg.error('Status:' + xhr.status + '，' + xhr.statusText + '，请稍后再试！', function () {
+                                ex(this);
+                            });
+                            return false;
+                        }
+                    });
+                }
+            };
+
+        //连接成功时触发
+        socket.onopen = function (evt) {
+            console.log('socket onopen');
+            //初始化配置
+            //基本上一个完整LayIM实例的构成由它而开始
+            layim.config({
+                //获取主面板列表信息 可获得：我的信息、好友列表、群组列表。
+                init: {
+                    url: '/chat/init', //接口地址
+                    type: 'get', //默认get，一般可不填
+                    data: {} //额外参数
+                },
+                // 获取群员接口
+                // 会自动传递一个 id 参数（群组 id）
+                members: {
+                    url: '/chat/members', //接口地址
+                    type: 'get', //默认get，一般可不填
+                    data: {} //额外参数
+                },
+                // 上传图片接口，若不开启图片上传，剔除该项即可
+                // 传递一个name="file"的文件表单域
+                uploadImage: {
+                    url: '/upload/image',  //接口地址
+                    type: 'post' //默认post
+                },
+                //上传文件接口，若不开启文件上传，剔除该项即可
+                uploadFile: {
+                    url: '/upload/file',  //接口地址
+                    type: 'post' //默认post
+                },
+                //扩展工具栏，如果无需扩展，剔除该项即可
+                tool: [{
+                    alias: 'code', //工具别名
+                    title: '代码', //工具名称
+                    icon: '&#xe64e;' //工具图标，参考layui图标文档
+                }],
+                //消息盒子页面地址, 为主面板赋予各种系统消息机制，若不开启，剔除该项即可
+                // msgbox: '/chat/msgbox',
+                //发现页面地址，若不开启，剔除该项即可
+                // find: '/chat/find',
+                //查看聊天记录页面地址，若不开启，剔除该项即可
+                //会在chatLog所对应的URL后面动态追加当前聊天窗口的ID（即好友或群组ID）和类型，如：?id=123&type=friend
+                chatLog: '/chat/chatlog',
+                brief: false, //是否简约模式，如果设为 true，则主面板不会显示。一般可用于客服。默认 false
+                title: 'LayIM', //主面板最小化后显示的名称, 默认 我的LayIM
+                min: false, //主面板是否在页面打开时，始终最小化展现，默认 false
+                right: '0px',//用于设定主面板右偏移量。该参数可避免遮盖你页面右下角已经的bar，默认 0px
+                minRight: '', //用户控制聊天面板最小化时、及新消息提示层的相对right的px坐标。默认居中
+                initSkin: skin,//设置初始背景。可设置./layui/css/modules/layim/skin目录下的图片文件名.默认为空字符
+                isAudio: false,//是否开启聊天工具栏音频，默认 false
+                isVideo: false,//是否开启开启聊天工具栏视频，默认 false
+                notice: true, //是否开启桌面消息提醒，即在浏览器之外的提醒,默认 false
+                voice: 'default.mp3', //设定消息提醒的声音文件（所在目录：./layui/css/modules/layim/voice/）若不开启，设置 false 即可 默认 default.mp3
+                isfriend: true, //是否开启好友, 默认 ture
+                isgroup: true, //是否开启群组, 默认 ture
+                maxLength: 3000,//可允许的消息最大字符长度
+                skin: [],//拓展背景 skin: [ ‘http://xxx.com/skin.jpg‘, ‘b.png’], 默认null
+                copyright: true, //是否隐藏版权 默认false
+            });
+
+            //监听自定义工具栏点击
+            //code为过滤器，对应的是工具别名（alias）
+            layim.on('tool(code)', function (insert, send, obj) { //事件中的tool为固定字符，而code则为过滤器，对应的是工具别名（alias）
+                layer.prompt({
+                    title: '插入代码',
+                    formType: 2,
+                    shade: 0
+                }, function (text, index) {
+                    layer.close(index);
+                    insert('[pre class=layui-code]' + text + '[/pre]'); //将内容插入到编辑器，主要由insert完成
+                    send(); //自动发送
+                });
+                console.log('代码工具栏');
+                console.log(this); //获取当前工具的DOM对象
+                console.log(obj); //获得当前会话窗口的DOM对象、基础信息
+            });
+
+            //触发LayIM初始化就绪
+            layim.on('ready', function (options) {
+                // console.log(options);
+            });
+
+            //触发在线状态切换
+            layim.on('online', function (status) {
+                console.log(status); //获得online或者hide
+                request.post({'url': '/chat/online', data: {value: status}})
+            });
+
+            //触发修改签名
+            //当主面板的签名被改动后触发，并返回新的签名
+            layim.on('sign', function (value) {
+                console.log(value); //获得新的签名
+                request.post({'url': '/chat/sign', 'data': {value: value}})
+            });
+
+            //触发更换背景皮肤
+            //当点击更换背景皮肤时触发，返回特定目录下的图片文件名和src路径
+            layim.on('setSkin', function (filename, src) {
+                console.log(filename); //获得文件名，如：1.jpg
+                console.log(src); //获得背景路径，如：http://res.layui.com/layui/src/css/modules/layim/skin/1.jpg
+                request.post({'url': '/chat/setSkin', 'data': {value: src}})
+            });
+
+            //触发发送的消息
+            //每当你发送一个消息，都可以通过该事件触发到。回调参数接受一个object类型的值，携带发送的聊天信息
+            layim.on('sendMessage', function (res) {
+                //res.mine 包含我发送的消息及我的信息
+                //res.to 对方的信息; type聊天类型，一般分friend和group两种，group即群聊
+                console.log(res);
+                request.post({'url': '/chat/sendMessage', 'data': res})
+            });
+
+            //触发查看群员
+            //在群聊面板中查看全部成员时触发，该事件返回获取群员接口（即layim.config中的members）的response信息
+            layim.on('members', function (data) {
+                console.log(data);
+            });
+
+            //触发聊天窗口的切换
+            //返回一个object类型的参数，携带当前聊天面板的容器、基础信息等
+            layim.on('chatChange', function (obj) {
+                console.log('监听聊天窗口的切换', obj);
+                let cache = layim.cache();
+                let username = cache.mine.username;
+                let type = obj.data.type;
+
+                if (type === 'friend') {
+                    if (obj.data.status === 'online') {
+                        //更新当前会话状态 可用于显示：对方输入状态、在线离线状态等
+                        layim.setChatStatus('<span style="color:#3FDD86;">在线</span>');
+                    } else if (obj.data.status === 'offline') {
+                        layim.setChatStatus('<span style="color:#999999;">离线</span>');
+                    }
+                } else if (type === 'group') {
+                    request.post({
+                        'url': '/chat/enterGroup', data: {
+                            system: true,
+                            id: obj.data.id,
+                            type: type,
+                            content: `${username}加入群聊`
+                        }
+                    })
+                }
+            });
+
+            //服务端设定多少秒内没收到心跳关闭连接
+            //客户端定时(间隔最好小于60秒)向服务端发送心跳
+            setInterval(function () {
+                socket.send('Hi Server, I am LayIM! Ping! Ping! Ping!')
+            }, 30000);
+        };
+
+        //收到服务器消息时触发
+        socket.onmessage = function (evt) {
+            console.log('socket onmessage');
+            let res = JSON.parse(evt.data);
+            console.log(res);
+            switch (res.emit) {
+                case 'bind':
+                    request.post({'url': '/chat/bind', data: res.data});
+                    break;
+                case 'friendStatus':
+                    layim.setFriendStatus(res.data.id, res.data.status);
+                    break;
+                case 'message':
+                    //检测到WebSocket事件后，执行layim的内置方法：layim.getMessage(options)
+                    layim.getMessage(res.data);
+                    break;
+                case 'pong':
+                    console.log(res.data);
+                    break;
+            }
+        };
+
+        //链接关闭触发
+        socket.onclose = function (evt) {
+            console.log('socket onclose');
+        };
+
+        //出错时触发
+        socket.onerror = function (evt) {
+            console.log('socket onerror');
+            msg.error(socketName + ' 连接失败');
+        };
+    });
+</script>
+{/block}
