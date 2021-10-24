@@ -27,7 +27,7 @@ define('GLOBAL_START', 1);
 require_once __DIR__ . '/vendor/autoload.php';
 
 // 加载所有Applications/*/start.php，以便启动所有服务
-foreach (glob(__DIR__ . '/extend/layim/start*.php') as $startFile) {
+foreach (glob(__DIR__ . '/extend/Layim/start*.php') as $startFile) {
     require_once $startFile;
 }
 // 运行所有服务

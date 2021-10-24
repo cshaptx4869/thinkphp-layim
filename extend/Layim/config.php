@@ -1,8 +1,8 @@
 <?php
 
-return [
+$config = [
     'gateway' => [
-        'socket_name' => 'websocket://127.0.0.1:7272',
+        'socket_name' => 'websocket://0.0.0.0:7272',
         'name' => 'ChatGateway', //gateway名称
         'count' => 4, //gateway进程数
         'lan_ip' => '127.0.0.1', //本机ip，分布式部署时使用内网ip
@@ -19,6 +19,6 @@ return [
         'event_handler' => 'Layim\\Events', //设置处理业务的类
     ],
     'register' => [
-        'socket_name' => 'text://127.0.0.1:1236',
+        'socket_name' => 'text://0.0.0.0:1236',
     ]
 ];

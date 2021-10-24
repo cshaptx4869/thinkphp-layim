@@ -18,9 +18,13 @@ thinkphp-layim
 3. 拷贝 **`.example.env`** 文件为 **`.env`**，并配置正确的数据库
 4. 导入数据表 **`database/chat.sql`**
 5. 执行命令 **`php think run -p 8888`**，启动内置服务器。语法参照 thinkphp6 手册
-6. 双击 **`start_for_win.bat`** (windows环境) 或者 执行命令**`php start_for_linux.php` **(linux环境)
+6. 双击 **`start_for_win.bat`** (windows环境) 或者 执行命令**`php start_for_linux.php start` **(linux环境)
 7. 访问后台 **`http://127.0.0.1:8888/admin`**
 8. 输入账号登录（ 测试账号 `cshaptx4869`、`xianxin`。密码都是 123456 ）
+
+> **`extend/Layim/config.php`** 可修改服务端的配置
+>
+> **`app/controller/Chat.php`** 可修改请求的 WebSocket 地址
 
 
 

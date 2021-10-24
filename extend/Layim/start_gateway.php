@@ -4,7 +4,7 @@ use GatewayWorker\Gateway;
 use Workerman\Worker;
 
 require_once dirname(dirname(__DIR__)) . '/vendor/autoload.php';
-$config = require_once 'config.php';
+require_once 'config.php';
 
 //Gateway进程是暴露给客户端的让其连接的进程。
 //所有客户端的请求都是由Gateway接收然后分发给BusinessWorker处理，同样BusinessWorker也会将要发给客户端的响应通过Gateway转发出去。
