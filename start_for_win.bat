@@ -1,3 +1,3 @@
 CHCP 65001
-PHP extend\layim\start_register.php  extend\layim\start_gateway.php  extend\layim\start_businessworker.php
+php Applications\Layim\start_register.php Applications\Layim\start_gateway.php Applications\Layim\start_businessworker.php
 pause

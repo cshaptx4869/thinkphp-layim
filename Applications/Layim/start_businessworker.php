@@ -3,8 +3,9 @@
 use GatewayWorker\BusinessWorker;
 use Workerman\Worker;
 
-require_once dirname(dirname(__DIR__)) . '/vendor/autoload.php';
-require_once 'config.php';
+// 自动加载类
+require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/config.php';
 
 //BusinessWorker是运行业务逻辑的进程。
 //BusinessWorker收到Gateway转发来的事件及请求时会默认调用Events.php中的onConnect onMessage onClose方法处理事件及数据

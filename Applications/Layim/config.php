@@ -15,10 +15,10 @@ $config = [
     'worker' => [
         'name' => 'ChatBusinessWorker', //worker名称
         'count' => 4, //bussinessWorker进程数量 建议cpu核数的1-3倍
-        'register_address' => '127.0.0.1:1236',// 服务注册地址
-        'event_handler' => 'Layim\\Events', //设置处理业务的类
+        'register_address' => '127.0.0.1:1236',// 服务注册地址,只写格式类似于 '127.0.0.1:1236'
+        'event_handler' => 'Events', //设置处理业务的类,默认值是Events
     ],
     'register' => [
-        'socket_name' => 'text://0.0.0.0:1236',
+        'socket_name' => 'text://0.0.0.0:1236', //必须是text协议
     ]
 ];
