@@ -6,72 +6,196 @@
   <title>发现</title>
   <link rel="stylesheet" href="__layuiadmin__/layui/css/layui.css">
   <style>
-    .recommend {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: space-evenly;
-    }
 
-    .recommend > div {
-      width: 20%;
-      height: 150px;
-      margin-bottom: 10px;
-    }
+      .container {
+          margin: 15px;
+      }
 
-    .recommend img {
-      width: 100%;
-    }
+      .recommend {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: wrap;
+      }
+
+      .recommend > div {
+          display: flex;
+          padding: 10px;
+          margin-right: 20px;
+          margin-bottom: 20px;
+          border: 1px solid #d7d7d7;
+          border-radius: 3px;
+      }
+
+      .recommend .avatar {
+          width: 100px;
+          height: 100px;
+          margin-right: 10px;
+      }
+
+      .recommend .avatar img {
+          width: 100%;
+          height: 100%;
+      }
+
+      .recommend .info p {
+          width: 160px;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+      }
+
+      .recommend .info p:nth-of-type(2) {
+          margin-bottom: 6px;
+      }
+
+      .recommend .info p:last-of-type {
+          color: #999999;
+          margin-bottom: 10px;
+      }
+
+      .recommend .info p:last-of-type:hover {
+          cursor: pointer;
+      }
+
+      .recommend .tips {
+          text-align: center;
+          color: #999999;
+      }
   </style>
 </head>
 <body>
-<div style="margin: 15px;">
+<div class="container">
   <form class="layui-form">
     <div class="layui-form-item">
       <div class="layui-inline">
         <div class="layui-input-inline" style="width:550px">
-          <input type="text" name="account" required lay-verify="required" placeholder="请输入账号" autocomplete="off"
+          <input type="text" name="account" required placeholder="请输入账号" autocomplete="off"
                  class="layui-input">
         </div>
         <div class="layui-input-inline" style="width: 80px">
-          <button class="layui-btn" lay-submit lay-filter="form">查找</button>
+          <button class="layui-btn" lay-submit lay-filter="*">查找</button>
         </div>
       </div>
       <div class="layui-inline">
         <div class="layui-input-inline">
-          <input type="radio" name="type" value="group" title="找人" checked>
-          <input type="radio" name="type" value="group" title="找群">
+          <input type="radio" name="type" value="friend" title="找人" lay-filter="type" checked>
+          <input type="radio" name="type" value="group" title="找群" lay-filter="type">
         </div>
       </div>
     </div>
-  </form>
-  <div class="recommend">
-    {foreach $recommendFriends as $recommendFriend}
-    <div>
-      <img src="{$recommendFriend.avatar}" alt="" width="100%" height="100%">
-      <p>{$recommendFriend.nickname}</p>
+
+    <div class="layui-form-item">
+      <div class="recommend" id="LAY_view"></div>
     </div>
-    {/foreach}
-    <div><img src="/static/images/pkq.png" alt=""></div>
-    <div><img src="/static/images/pkq.png" alt=""></div>
-    <div><img src="/static/images/pkq.png" alt=""></div>
-    <div><img src="/static/images/pkq.png" alt=""></div>
-  </div>
+  </form>
 </div>
+
+<script id="LAY_tpl" type="text/html">
+  {{# if (d.data.length) { }}
+  {{# layui.each(d.data, function(index, item) { }}
+  <div class="item">
+    <div class="avatar">
+      <img src="{{ item.avatar }}" alt="用户头像">
+    </div>
+    <div class="info">
+      <p>{{ item.nickname }}</p>
+      <p>({{ item.account }})</p>
+      <p title="{{ item.signature }}">{{ item.signature }}</p>
+      <button type="button" class="layui-btn layui-btn-sm layui-btn-normal layui-icon layui-icon-addition"
+              data-info='{{ JSON.stringify(item) }}'> 交友
+      </button>
+    </div>
+  </div>
+  {{# }); }}
+  {{# } else { }}
+  <p class="tips">啊哦没有更多了 o(╥﹏╥)o</p>
+  {{# } }}
+</script>
 
 <script src="__layuiadmin__/layui/layui.js"></script>
 <script>
-    layui.use(['layim', 'laypage', 'form'], function () {
-        var layim = layui.layim
-            , layer = layui.layer
-            , laytpl = layui.laytpl
-            , $ = layui.jquery
-            , laypage = layui.laypage;
-        //监听提交
-        form.on('submit(form)', function (data) {
-            layer.msg(JSON.stringify(data.field));
+    layui.use(['laytpl', 'form', 'jquery', 'layer', 'layim', 'flow'], function () {
+        var layer = layui.layer,
+            laytpl = layui.laytpl,
+            $ = layui.jquery,
+            form = layui.form,
+            layim = layui.layim,
+            flow = layui.flow,
+            app = {
+                data: {
+                    search: {
+                        type: 'friend',
+                        account: '',
+                        page: 1,
+                        limit: 10
+                    }
+                },
+                methods: {
+                    getList: function () {
+                        $.ajax({
+                            url: '/chat/find',
+                            type: 'GET',
+                            data: app.data.search,
+                            dataType: 'json',
+                            success: function (res) {
+                                if (res.code != 0) {
+                                    return layer.msg(res.msg);
+                                }
+
+                                var html = laytpl(LAY_tpl.innerHTML).render({
+                                    data: res.data.list
+                                });
+                                $('#LAY_view').html(html);
+                            }
+                        })
+                    }
+                }
+            };
+
+        form.on('submit(*)', function (data) {
+            app.data.search = {...app.data.search, ...data.field};
+            app.methods.getList();
             return false;
         });
+
+        form.on('radio(type)', function (data) {
+            app.data.search.type = data.value;
+            app.methods.getList()
+        });
+
+        // 加好友/加群
+        $(document).on('click', '.layui-icon-addition', function () {
+            let userinfo = $(this).data('info');
+            //弹出添加面板
+            layim.add({
+                type: app.data.search.type, //friend：申请加好友、group：申请加群
+                username: userinfo.username, //好友昵称，若申请加群，参数为：groupname
+                avatar: userinfo.avatar, //头像
+                submit: function (group, remark, index) { //一般在此执行Ajax和WS，以通知对方
+                    console.log(group); //获取选择的好友分组ID，若为添加群，则不返回值
+                    console.log(remark); //获取附加信息
+                    layer.close(index); //关闭改面板
+                    $.ajax({
+                        url: '/chat/makeFriend',
+                        type: 'POST',
+                        data: {
+                            type: app.data.search.type,
+                            to: userinfo.id,
+                            remark: remark,
+                            friend_group_id: group,
+                        },
+                        dataType: 'json',
+                        success: function (res) {
+                            console.log(res);
+                        }
+                    })
+                }
+            });
+
+        });
+
+        //获取列表
+        app.methods.getList();
     });
 </script>
 </body>

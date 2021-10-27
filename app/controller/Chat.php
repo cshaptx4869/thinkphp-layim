@@ -8,10 +8,12 @@ use app\model\FriendGroup;
 use app\model\Group;
 use app\model\GroupMember;
 use app\model\Member;
+use app\model\Msgbox;
 use app\model\Record;
 use app\model\Skin;
 use Fairy\Toolkit;
 use GatewayClient\Gateway;
+use think\db\Query;
 use think\facade\Db;
 
 class Chat extends BaseController
@@ -61,6 +63,10 @@ class Chat extends BaseController
         //通知朋友我已上线
         $memberObj = Member::find($this->userInfo['id']);
         $memberObj->status == Member::STATUS_ONLINE && $this->notifyFriendOnlineStatus();
+        //消息盒子通知
+        Gateway::sendToUid($this->userInfo['id'], $this->makeMessage('msgbox', [
+            'count' => Msgbox::getUnreadCountByMemberId($this->userInfo['id'])
+        ]));
 
         return json(Toolkit::success('绑定成功'));
     }
@@ -422,36 +428,216 @@ class Chat extends BaseController
 
     /**
      * 添加好友
-     * @return \think\response\View
+     * @return \think\response\Json|\think\response\View
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
     public function find()
     {
-        $recommendFriends = [];
-        $friendIds = Db::table('chat_friend_group')->alias('fg')
-            ->join(['chat_friend' => 'f'], 'fg.id=f.group_id')
-            ->where('fg.member_id', $this->userInfo['id'])
-            ->column('f.member_id');
-        if ($friendIds) {
-            $notFriendIds = Db::name('member')
-                ->where('id', '<>', $this->userInfo['id'])
-                ->whereNotIn('id', $friendIds)
-                ->column('id');
-            if ($notFriendIds) {
-                if (count($notFriendIds) > 10) {
-                    shuffle($notFriendIds);
-                    $notFriendIds = array_rand($notFriendIds, 10);
-                }
-                $recommendFriends = Db::name('member')
-                    ->whereIn('id', $notFriendIds)
-                    ->field('id,account,nickname,status,signature,avatar')
-                    ->select();
+        if ($this->request->isAjax()) {
+            $get = $this->request->get();
+            $rule = [
+                'type' => 'require',
+                'page' => 'require',
+                'limit' => 'require'
+            ];
+            try {
+                $this->validate($get, $rule);
+            } catch (\Exception $e) {
+                return json(Toolkit::error($e->getMessage()));
             }
+
+            if ($get['type'] === 'friend') {
+                if ($get['account']) {
+                    $qb = Member::whereLike('account', '%' . $get['account'] . '%')
+                        ->where('id', '<>', $this->userInfo['id']);
+                    $count = $qb->count();
+                    $list = $qb->field('id,account,nickname,signature,avatar')
+                        ->select();
+                } else {
+                    $myFriendGroupIds = FriendGroup::where('member_id', $this->userInfo['id'])
+                        ->column('id');
+                    $myFriendIds = Friend::whereIn('group_id', $myFriendGroupIds)
+                        ->column('member_id');
+                    $qb = Member::whereNotIn('id', $myFriendIds)
+                        ->where('id', '<>', $this->userInfo['id'])
+                        ->field('id,account,nickname,signature,avatar');
+                    $count = $qb->count();
+                    $list = $qb->order('id', 'desc')
+                        ->page($get['page'], $get['limit'])
+                        ->select();
+                }
+            } else if ($get['type'] === 'group') {
+                if ($get['account']) {
+                    $qb = Group::whereLike('account', '%' . $get['account'] . '%');
+                    $count = $qb->count();
+                    $list = $qb->field('id,account,group_name nickname,desc signature,avatar')
+                        ->select();
+                } else {
+                    $myGroupIds = GroupMember::where('member_id', '=', $this->userInfo['id'])
+                        ->column('group_id');
+                    $qb = Group::whereNotIn('id', $myGroupIds);
+                    $count = $qb->count();
+                    $list = $qb->field('id,account,group_name nickname,`desc` signature,avatar')
+                        ->select();
+                }
+            }
+
+            return json(Toolkit::success(['list' => $list, 'count' => $count]));
         }
 
-        return view('', ['recommendFriends' => $recommendFriends]);
+        return view();
+    }
+
+    /**
+     * 请求加好友
+     * @return \think\response\Json
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public function makeFriend()
+    {
+        $post = $this->request->post();
+        $rule = [
+            'type' => ['require', 'in:friend,group'],
+            'to' => 'require',
+        ];
+        try {
+            $this->validate($post, $rule);
+        } catch (\Exception $e) {
+            return json(Toolkit::error($e->getMessage()));
+        }
+
+        $post['from'] = $this->userInfo['id'];
+        $post['send_time'] = time();
+        if ($post['type'] === 'friend') {
+            $post['type'] = Msgbox::TYPE_MAKE_FRIEND_USER;
+            $post['content'] = '申请添加你为好友';
+        } else {
+            $post['type'] = Msgbox::TYPE_JOIN_GROUP_USER;
+            $post['group_id'] = $post['to'];
+            $groupInfo = Group::find($post['to']);
+            $post['to'] = $groupInfo->belong;
+            $post['content'] = '申请加入群 [' . $groupInfo->group_name . ']';
+        }
+        Msgbox::create($post);
+        if (Gateway::isUidOnline($post['to'])) {
+            Gateway::sendToUid($post['to'], $this->makeMessage('msgbox', [
+                'count' => Msgbox::getUnreadCountByMemberId($post['to'])
+            ]));
+        }
+
+        return json(Toolkit::success());
+    }
+
+    /**
+     * 消息盒子
+     * 消息盒子
+     * @return \think\response\Json|\think\response\View
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public function msgbox()
+    {
+        if ($this->request->isAjax()) {
+            $page = $this->request->get('page', 1);
+            $limit = $this->request->get('limit', 10);
+            $qb = Msgbox::where('to', $this->userInfo['id'])
+                ->where('status', Msgbox::STATUS_UNREAD);
+            $count = $qb->count();
+            $list = $qb->page($page, $limit)
+                ->order('id', 'desc')
+                ->select()
+                ->toArray();
+            $data = [];
+            if ($list) {
+                //发送者信息
+                $fromArr = Member::whereIn('id', array_column($list, 'from'))
+                    ->field('id,account,avatar,signature')
+                    ->select()
+                    ->toArray();
+                $fromArrMap = Toolkit::setArrayIndex($fromArr, 'id');
+                $groupArr = Group::whereIn('id', array_column($list, 'group_id'))
+                    ->field('id,account,group_name,avatar')
+                    ->select()
+                    ->toArray();
+                $groupArrMap = Toolkit::setArrayIndex($groupArr, 'id');
+                foreach ($list as $row) {
+                    $data[] = [
+                        'id' => $row['id'],
+                        'content' => $row['content'],
+                        'uid' => $this->userInfo['id'],
+                        'from' => $row['from'],
+                        'group' => $row['group_id'],
+                        'type' => $row['type'],
+                        'remark' => $row['remark'],
+                        'href' => null,
+                        'read' => $row['status'],
+                        'time' => Toolkit::formatDate($row['send_time']),
+                        'userInfo' => isset($fromArrMap[$row['from']]) ? $fromArrMap[$row['from']] : [],
+                        'groupInfo' => isset($groupArrMap[$row['group_id']]) ? $groupArrMap[$row['group_id']] : [],
+                    ];
+                }
+            }
+
+            return json(Toolkit::success(['list' => $data, 'count' => $count]));
+        }
+
+        return view();
+    }
+
+    /**
+     * @return \think\response\Json|void
+     * @throws \Exception
+     */
+    public function agreeFriend()
+    {
+        $post = $this->request->post();
+        $rule = [
+            'id' => 'require',
+            'group' => 'require',
+        ];
+        try {
+            $this->validate($post, $rule);
+        } catch (\Exception $e) {
+            return json(Toolkit::error($e->getMessage()));
+        }
+        $msgboxObj = Msgbox::find($post['id']);
+        if (empty($msgboxObj)) {
+            return json(Toolkit::error('消息不存在'));
+        }
+
+        //互相加好友
+        $friendModel = new Friend();
+        $friendModel->saveAll([
+            ['group_id' => $post['group'], 'member_id' => $msgboxObj->from],
+            ['group_id' => $msgboxObj->friend_group_id, 'member_id' => $this->userInfo['id']],
+        ]);
+        //更新消息通知
+        $msgboxObj->status = Msgbox::STATUS_AGREED;
+        $msgboxObj->read_time = time();
+        $msgboxObj->save();
+
+        $toMemberInfo = Member::find($msgboxObj->to);
+        Msgbox::create([
+            'type' => Msgbox::TYPE_MAKE_FRIEND_SYSTEM,
+            'to' => $msgboxObj->from,
+            'content' => '你和 [' . $toMemberInfo->account . '] 已经是好友了',
+            'send_time' => time(),
+        ]);
+        if (Gateway::isUidOnline($msgboxObj->from)) {
+            Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
+            ]));
+        }
+    }
+
+    public function refuseFriend()
+    {
+
     }
 
     /**
@@ -494,7 +680,7 @@ class Chat extends BaseController
             } else {
                 $qb = Db::name('record')->alias('r')
                     ->join(['chat_member' => 'm'], 'm.id=r.sender')
-                    ->where('receiver',$get['id'])
+                    ->where('receiver', $get['id'])
                     ->where('type', $get['type'])
                     ->fieldRaw('m.id,m.account username,m.avatar,r.send_time*1000 as timestamp,r.content');
             }
@@ -507,11 +693,6 @@ class Chat extends BaseController
             return json(Toolkit::success(['list' => $list, 'count' => $count]));
         }
 
-        return view();
-    }
-
-    public function msgbox()
-    {
         return view();
     }
 

@@ -150,9 +150,9 @@
                     icon: '&#xe64e;' //工具图标，参考layui图标文档
                 }],
                 //消息盒子页面地址, 为主面板赋予各种系统消息机制，若不开启，剔除该项即可
-                // msgbox: '/chat/msgbox',
+                msgbox: '/chat/msgbox',
                 //发现页面地址，若不开启，剔除该项即可
-                // find: '/chat/find',
+                find: '/chat/find',
                 //查看聊天记录页面地址，若不开启，剔除该项即可
                 //会在chatLog所对应的URL后面动态追加当前聊天窗口的ID（即好友或群组ID）和类型，如：?id=123&type=friend
                 chatLog: '/chat/chatlog',
@@ -280,6 +280,9 @@
                 case 'message':
                     //检测到WebSocket事件后，执行layim的内置方法：layim.getMessage(options)
                     layim.getMessage(res.data);
+                    break;
+                case 'msgbox':
+                    res.data.count && layim.msgbox(res.data.count);
                     break;
                 case 'pong':
                     console.log(res.data);
