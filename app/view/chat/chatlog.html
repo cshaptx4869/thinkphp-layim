@@ -6,27 +6,32 @@
 <div id="app" v-cloak>
   <div class="container">
     <div class="layim-chat-main">
-      <ul id="LAY_view">
-        <block v-for="(item,index) in list" :key="index">
-          <li class="layim-chat-mine" v-if="item.id == mineId">
-            <div class="layim-chat-user">
-              <img :src="item.avatar" alt="头像">
-              <cite><i>{{ item.timestamp|formatDate }}</i>{{ item.username }}</cite>
-            </div>
-            <div class="layim-chat-text">{{ item.content|formatContent }}</div>
-          </li>
-          <li v-else>
-            <div class="layim-chat-user">
-              <img :src="item.avatar" alt="头像">
-              <cite>{{ item.username }}<i>{{ item.timestamp|formatDate}}</i></cite>
-            </div>
-            <div class="layim-chat-text">{{ item.content|formatContent }}</div>
-          </li>
-        </block>
-      </ul>
+      <block v-if="list.length">
+        <ul>
+          <block v-for="(item,index) in list" :key="index">
+            <li class="layim-chat-mine" v-if="item.id == mineId">
+              <div class="layim-chat-user">
+                <img :src="item.avatar" alt="头像">
+                <cite><i>{{ item.timestamp|formatDate }}</i>{{ item.username }}</cite>
+              </div>
+              <div class="layim-chat-text">{{ item.content|formatContent }}</div>
+            </li>
+            <li v-else>
+              <div class="layim-chat-user">
+                <img :src="item.avatar" alt="头像">
+                <cite>{{ item.username }}<i>{{ item.timestamp|formatDate}}</i></cite>
+              </div>
+              <div class="layim-chat-text">{{ item.content|formatContent }}</div>
+            </li>
+          </block>
+        </ul>
+      </block>
+      <block v-else>
+        <p class="tips">啊哦没有更多了 o(╥﹏╥)o</p>
+      </block>
     </div>
     <!-- 分页 -->
-    <div id="page"></div>
+    <div id="page" v-show="list.length"></div>
   </div>
 </div>
 {/block}

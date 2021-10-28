@@ -195,16 +195,21 @@
                 case 'bind':
                     toolkit.request.post({'url': '/chat/bind', data: res.data});
                     break;
-                case 'friendStatus':
+                case 'setFriendStatus':
+                    //更新好友列表离线状态
                     layim.setFriendStatus(res.data.id, res.data.status);
                     break;
-                case 'message':
+                case 'getMessage':
                     //检测到WebSocket事件后，执行layim的内置方法：layim.getMessage(options)
                     layim.getMessage(res.data);
                     break;
                 case 'msgbox':
                     //消息盒子 在主面板的消息盒子icon上不断显隐提示，直到点击后自动消失
                     res.data.count && layim.msgbox(res.data.count);
+                    break;
+                case 'addList':
+                    //添加好友或群到主面板
+                    layim.addList(res.data);
                     break;
                 case 'pong':
                     console.log(res.data);

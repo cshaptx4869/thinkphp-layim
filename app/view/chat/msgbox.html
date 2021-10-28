@@ -6,31 +6,49 @@
 <div id="app" v-cloak>
   <div class="container">
     <ul class="layim-msgbox">
-      <block v-if="item.from" v-for="(item,index) in list" :key="index">
-        <li>
-          <a href="#" target="_blank">
-            <img :src="item.userInfo.avatar" class="layui-circle layim-msgbox-avatar" alt="头像">
-          </a>
-          <p class="layim-msgbox-user">
-            <a href="#" target="_blank">{{ item.userInfo.username || '' }}</a>
-            <span>{{ item.time }}</span>
-          </p>
-          <p class="layim-msgbox-content">
-            {{ item.content }}<span>{{ item.remark ? '附言: ' + item.remark : '' }}</span>
-          </p>
-          <p class="layim-msgbox-btn" v-if="item.status === 0">
-            <button type="button" class="layui-btn layui-btn-small" @click="agree(item,$event)">同意</button>
-            <button type="button" class="layui-btn layui-btn-small layui-btn-primary" @click="refuse(item,$event)">拒绝
-            </button>
-          </p>
-        </li>
+      <block v-if="list.length" v-for="(item,index) in list" :key="index">
+        <!-- 非系统消息 -->
+        <block v-if="item.from">
+          <li>
+            <a href="#" target="_blank">
+              <img :src="item.userInfo.avatar" class="layui-circle layim-msgbox-avatar" alt="头像">
+            </a>
+            <p class="layim-msgbox-user">
+              <a href="#" target="_blank">{{ item.userInfo.account || '' }}</a>
+              <span>{{ item.time }}</span>
+            </p>
+            <p class="layim-msgbox-content">
+              {{ item.content }}<span>{{ item.remark ? '附言: ' + item.remark : '' }}</span>
+            </p>
+            <p class="layim-msgbox-btn">
+              <block v-if="item.status === 0">
+                <button type="button" class="layui-btn layui-btn-small" @click="agree(item,$event)">同意</button>
+                <button type="button" class="layui-btn layui-btn-small layui-btn-primary" @click="refuse(item,$event)">
+                  拒绝
+                </button>
+              </block>
+              <block v-else-if="item.status === 1">
+                <span>已同意</span>
+              </block>
+              <block v-else="item.status === 2">
+                <em>已拒绝</em>
+              </block>
+            </p>
+          </li>
+        </block>
+        <!-- 系统消息 -->
+        <block v-else>
+          <li class="layim-msgbox-system">
+            <p><em>系统：</em>{{ item.content }}<span>{{ item.time }}</span></p>
+          </li>
+        </block>
       </block>
       <block v-else>
-        <li class="layim-msgbox-system">
-          <p><em>系统：</em>{{ item.content }}<span>{{ item.time }}</span></p>
-        </li>
+        <p class="tips">啊哦没有更多了 o(╥﹏╥)o</p>
       </block>
     </ul>
+    <!-- 分页 -->
+    <div id="page" v-show="list.length"></div>
   </div>
 </div>
 {/block}
@@ -38,8 +56,9 @@
 {block name="js"}
 <script src="__js__/vue.min.js"></script>
 <script>
-    layui.use(['layim', 'toolkit', 'jquery'], function () {
+    layui.use(['layim', 'toolkit', 'jquery', 'laypage'], function () {
         var toolkit = layui.toolkit,
+            laypage = layui.laypage,
             $ = layui.jquery;
 
         var app = new Vue({
@@ -62,11 +81,28 @@
                         data: _this.search
                     }, function (res) {
                         _this.list = res.data.list;
+                        laypage.render({
+                            elem: 'page',  //注意，这里的 test1 是 ID，不用加 # 号
+                            count: res.data.count, //数据总数，从服务端得到
+                            curr: _this.search.page,//起始页
+                            limit: _this.search.limit,//每页显示的条数
+                            limits: [10, 20, 30, 40, 50],
+                            layout: ['prev', 'page', 'next', 'count', 'limit'],//'prev', 'page', 'next', 'count', 'limit', 'skip', 'refresh'
+                            jump: function (obj, first) {
+                                //obj包含了当前分页的所有参数，比如：
+                                console.log(obj.curr); //得到当前页，以便向服务端请求对应页的数据。
+                                console.log(obj.limit); //得到每页显示的条数
+                                //首次不执行
+                                if (!first) {
+                                    _this.search.page = obj.curr;
+                                    _this.getList();
+                                }
+                            }
+                        });
                     });
                 },
-                //同意
+                //同意加好友或群
                 agree(item, event) {
-                    console.log($(event.target).parent().html('已同意'))
                     //加好友
                     if (item.type === 0) {
                         //好友分组面板
@@ -80,11 +116,11 @@
                                 toolkit.request.post({
                                     url: '/chat/agreeFriend',
                                     data: {
-                                        id: item.id, //对方用户ID
+                                        id: item.id,
                                         group: group //我设定的好友分组
                                     }
                                 }, function (res) {
-                                    //有好友或者群新增时 主面板同步添加的信息
+                                    //同步我的的好友信息
                                     parent.layui.layim.addList({
                                         type: 'friend', //列表类型，只支持friend和group两种
                                         avatar: item.userInfo.avatar, //好友头像
@@ -94,19 +130,31 @@
                                         sign: item.userInfo.signature //好友签名
                                     });
                                     parent.layer.close(index);
-                                    $(event.target).parent().html('已同意');
+                                    $(event.target).parent().html('<span>已同意</span>');
                                 });
                             }
                         });
+                    } else if (item.type === 2) {
+                        toolkit.msg.confirm('确定同意吗？', function (index) {
+                            toolkit.request.post({
+                                url: '/chat/agreeFriend',
+                                data: {
+                                    id: item.id,
+                                }
+                            }, function (res) {
+                                $(event.target).parent().html('<span>已同意</span>');
+                            })
+                        })
                     }
                 },
-                //拒绝
+                //拒绝加好友或群
                 refuse(item, event) {
                     toolkit.msg.confirm('确定拒绝吗？', function (index) {
                         toolkit.request.post({
                             url: '/chat/refuseFriend',
                             data: {
-                                id: item.id
+                                id: item.id,
+                                type: item.type === 0 ? 'friend' : (item.type === 2 ? 'group' : '')
                             }
                         }, function (res) {
                             toolkit.msg.close(index);

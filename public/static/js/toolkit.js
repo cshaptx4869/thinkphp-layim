@@ -42,13 +42,13 @@ layui.define(['jquery', 'layer'], function (exports) {
             },
             // 对话框
             confirm: function (msg, ok, no) {
-                var index = layer.confirm(msg, {title: '操作确认', btn: ['确认', '取消']}, function () {
+                layer.confirm(msg, {title: '操作确认', btn: ['确认', '取消']}, function (index) {
                     typeof ok === 'function' && ok.call(this);
-                }, function () {
+                    toolkit.msg.close(index);
+                }, function (index) {
                     typeof no === 'function' && no.call(this);
-                    self.close(index);
+                    toolkit.msg.close(index);
                 });
-                return index;
             },
             // 消息提示
             tips: function (msg, time, callback) {

@@ -27,24 +27,30 @@
       </div>
 
       <div class="layui-form-item">
-        <div class="recommend" v-if="list.length">
-          <div class="item" v-for="(item,index) in list" :key="index">
-            <div class="avatar">
-              <img :src="item.avatar" alt="用户头像">
-            </div>
-            <div class="info">
-              <p>{{ item.nickname }}</p>
-              <p>({{ item.account }})</p>
-              <p :title="item.signature">{{ item.signature }}</p>
-              <button type="button" class="layui-btn layui-btn-sm layui-btn-normal layui-icon layui-icon-addition"
-                      @click="makeFriend(item)"> 交友
-              </button>
+        <block v-if="list.length">
+          <div class="recommend">
+            <div class="item" v-for="(item,index) in list" :key="index">
+              <div class="avatar">
+                <img :src="item.avatar" alt="用户头像">
+              </div>
+              <div class="info">
+                <p>{{ item.nickname }}</p>
+                <p>({{ item.account }})</p>
+                <p :title="item.signature">{{ item.signature }}</p>
+                <button type="button" class="layui-btn layui-btn-sm layui-btn-normal layui-icon layui-icon-addition"
+                        @click="makeFriend(item)"> 交友
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        <p class="tips" v-else>啊哦没有更多了 o(╥﹏╥)o</p>
+        </block>
+        <block v-else>
+          <p class="tips">啊哦没有更多了 o(╥﹏╥)o</p>
+        </block>
       </div>
     </form>
+    <!-- 分页 -->
+    <div id="page" v-show="list.length"></div>
   </div>
 </div>
 {/block}
@@ -52,8 +58,9 @@
 {block name="js"}
 <script src="__js__/vue.min.js"></script>
 <script>
-    layui.use(['layim', 'toolkit', 'form'], function () {
+    layui.use(['layim', 'toolkit', 'form', 'laypage'], function () {
         var form = layui.form,
+            laypage = layui.laypage,
             layim = layui.layim,
             toolkit = layui.toolkit;
 
@@ -76,6 +83,7 @@
                 fromListen() {
                     var _this = this;
                     form.on('radio(changeType)', function (data) {
+                        _this.search.page = 1;
                         _this.search.type = data.value;
                         _this.getList();
                     });
@@ -89,6 +97,24 @@
                         data: _this.search
                     }, function (res) {
                         _this.list = res.data.list;
+                        laypage.render({
+                            elem: 'page',  //注意，这里的 test1 是 ID，不用加 # 号
+                            count: res.data.count, //数据总数，从服务端得到
+                            curr: _this.search.page,//起始页
+                            limit: _this.search.limit,//每页显示的条数
+                            limits: [10, 20, 30, 40, 50],
+                            layout: ['prev', 'page', 'next', 'count', 'limit'],//'prev', 'page', 'next', 'count', 'limit', 'skip', 'refresh'
+                            jump: function (obj, first) {
+                                //obj包含了当前分页的所有参数，比如：
+                                console.log(obj.curr); //得到当前页，以便向服务端请求对应页的数据。
+                                console.log(obj.limit); //得到每页显示的条数
+                                //首次不执行
+                                if (!first) {
+                                    _this.search.page = obj.curr;
+                                    _this.getList();
+                                }
+                            }
+                        });
                     });
                 },
                 //加好友/加群

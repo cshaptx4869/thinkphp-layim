@@ -236,7 +236,7 @@ class Chat extends BaseController
                 //好友在线
                 if (Gateway::isUidOnline($to['id'])) {
                     $toMemberObj = Member::find($to['id']);
-                    Gateway::sendToUid($to['id'], $this->makeMessage('message', [
+                    Gateway::sendToUid($to['id'], $this->makeMessage('getMessage', [
                         //来自于用户的聊天消息，它必须接受以下字段
                         'username' => $mine['username'],//消息来源用户名
                         'avatar' => $mine['avatar'],//消息来源用户头像
@@ -251,7 +251,7 @@ class Chat extends BaseController
 
                     //好友隐身
                     if ($toMemberObj->status == Member::STATUS_HIDE) {
-                        Gateway::sendToUid($mine['id'], $this->makeMessage('message', [
+                        Gateway::sendToUid($mine['id'], $this->makeMessage('getMessage', [
                             //来自于系统的聊天面板的消息
                             'system' => true,//系统消息
                             'id' => $to['id'], //聊天窗口ID，即跟谁聊天
@@ -261,7 +261,7 @@ class Chat extends BaseController
                     }
                 } else {
                     //好友离线
-                    Gateway::sendToUid($mine['id'], $this->makeMessage('message', [
+                    Gateway::sendToUid($mine['id'], $this->makeMessage('getMessage', [
                         //来自于系统的聊天面板的消息
                         'system' => true,//系统消息
                         'id' => $to['id'], //聊天窗口ID，即跟谁聊天
@@ -270,7 +270,7 @@ class Chat extends BaseController
                     ]));
                 }
             } else {
-                Gateway::sendToUid($to['id'], $this->makeMessage('message', [
+                Gateway::sendToUid($to['id'], $this->makeMessage('getMessage', [
                     'system' => true,
                     'id' => $to['id'], //聊天窗口ID，即跟谁聊天
                     'type' => $to['type'],
@@ -282,7 +282,7 @@ class Chat extends BaseController
             $groupStatus = Group::where('id', $to['id'])->value('group_status');
             //群禁言
             if ($groupStatus) {
-                Gateway::sendToUid($mine['id'], $this->makeMessage('message', [
+                Gateway::sendToUid($mine['id'], $this->makeMessage('getMessage', [
                     'system' => true,
                     'id' => $to['id'], //聊天窗口ID，即跟谁聊天
                     'type' => $to['type'],
@@ -292,7 +292,7 @@ class Chat extends BaseController
                 $status = GroupMember::where('member_id', $mine['id'])->value('status');
                 //用户禁言
                 if ($status) {
-                    Gateway::sendToUid($mine['id'], $this->makeMessage('message', [
+                    Gateway::sendToUid($mine['id'], $this->makeMessage('getMessage', [
                         'system' => true,
                         'id' => $to['id'], //聊天窗口ID，即跟谁聊天
                         'type' => $to['type'],
@@ -306,7 +306,7 @@ class Chat extends BaseController
                         ->column('member_id');
                     foreach ($memberIds as $memberId) {
                         if (Gateway::isUidOnline($memberId)) {
-                            Gateway::sendToUid($memberId, $this->makeMessage('message', [
+                            Gateway::sendToUid($memberId, $this->makeMessage('getMessage', [
                                 'username' => $mine['username'],
                                 'avatar' => $mine['avatar'],
                                 'id' => $to['id'],
@@ -340,7 +340,7 @@ class Chat extends BaseController
             ->column('member_id');
         foreach ($memberIds as $memberId) {
             if (Gateway::isUidOnline($memberId)) {
-                Gateway::sendToUid($memberId, $this->makeMessage('message', $post));
+                Gateway::sendToUid($memberId, $this->makeMessage('getMessage', $post));
             }
         }
 
@@ -454,6 +454,7 @@ class Chat extends BaseController
                         ->where('id', '<>', $this->userInfo['id']);
                     $count = $qb->count();
                     $list = $qb->field('id,account,nickname,signature,avatar')
+                        ->page($get['page'], $get['limit'])
                         ->select();
                 } else {
                     $myFriendGroupIds = FriendGroup::where('member_id', $this->userInfo['id'])
@@ -472,7 +473,8 @@ class Chat extends BaseController
                 if ($get['account']) {
                     $qb = Group::whereLike('account', '%' . $get['account'] . '%');
                     $count = $qb->count();
-                    $list = $qb->field('id,account,group_name nickname,desc signature,avatar')
+                    $list = $qb->field('id,account,group_name nickname,`desc` signature,avatar')
+                        ->page($get['page'], $get['limit'])
                         ->select();
                 } else {
                     $myGroupIds = GroupMember::where('member_id', '=', $this->userInfo['id'])
@@ -480,6 +482,7 @@ class Chat extends BaseController
                     $qb = Group::whereNotIn('id', $myGroupIds);
                     $count = $qb->count();
                     $list = $qb->field('id,account,group_name nickname,`desc` signature,avatar')
+                        ->page($get['page'], $get['limit'])
                         ->select();
                 }
             }
@@ -545,8 +548,7 @@ class Chat extends BaseController
         if ($this->request->isAjax()) {
             $page = $this->request->get('page', 1);
             $limit = $this->request->get('limit', 10);
-            $qb = Msgbox::where('to', $this->userInfo['id'])
-                ->whereNotIn('status', [Msgbox::STATUS_AGREED, Msgbox::STATUS_REFUSED]);
+            $qb = Msgbox::where('to', $this->userInfo['id']);
             $count = $qb->count();
             $list = $qb->page($page, $limit)
                 ->order('id', 'desc')
@@ -569,7 +571,7 @@ class Chat extends BaseController
                     $data[] = [
                         'id' => $row['id'],
                         'content' => $row['content'],
-                        'uid' => $this->userInfo['id'],
+                        'to' => $this->userInfo['id'],
                         'from' => $row['from'],
                         'group' => $row['group_id'],
                         'type' => $row['type'],
@@ -578,7 +580,7 @@ class Chat extends BaseController
                         'read' => $row['status'],
                         'time' => Toolkit::formatDate($row['send_time']),
                         'read_time' => date('Y-m-d H:i:s', $row['read_time']),
-                        'status' => $row['status'],
+                        'status' => $row['status'],//0待处理 1同意 2拒绝 3无须处理
                         'userInfo' => isset($fromArrMap[$row['from']]) ? $fromArrMap[$row['from']] : [],
                         'groupInfo' => isset($groupArrMap[$row['group_id']]) ? $groupArrMap[$row['group_id']] : [],
                     ];
@@ -596,6 +598,7 @@ class Chat extends BaseController
     }
 
     /**
+     * 同意好友、群申请
      * @return \think\response\Json|void
      * @throws \Exception
      */
@@ -603,8 +606,107 @@ class Chat extends BaseController
     {
         $post = $this->request->post();
         $rule = [
+            'id' => 'require'
+        ];
+        try {
+            $this->validate($post, $rule);
+        } catch (\Exception $e) {
+            return json(Toolkit::error($e->getMessage()));
+        }
+        $msgboxObj = Msgbox::find($post['id']);
+        if (empty($msgboxObj)) {
+            return json(Toolkit::error('消息不存在'));
+        }
+        if ($msgboxObj->type === Msgbox::TYPE_MAKE_FRIEND_USER && empty($post['group'])) {
+            return json(Toolkit::error('group不能为空'));
+        }
+
+        //更新消息状态
+        $msgboxObj->status = Msgbox::STATUS_AGREED;
+        $msgboxObj->save();
+
+        //加好友
+        if (isset($post['group'])) {
+            //互相加好友
+            $friendModel = new Friend();
+            $friendModel->saveAll([
+                ['group_id' => $post['group'], 'member_id' => $msgboxObj->from],//加入我的朋友分组
+                ['group_id' => $msgboxObj->friend_group_id, 'member_id' => $this->userInfo['id']],//把我加入好友的朋友分组
+            ]);
+
+            //发送同意添加好友通知
+            $myMemberInfo = Member::find($this->userInfo['id']);
+            Msgbox::create([
+                'type' => Msgbox::TYPE_MAKE_FRIEND_SYSTEM,
+                'status' => Msgbox::STATUS_IGNORED,
+                'to' => $msgboxObj->from,//消息接收者
+                'content' => '你和 [' . $myMemberInfo->account . '] 已经是好友了',
+                'send_time' => time(),
+            ]);
+            if (Gateway::isUidOnline($msgboxObj->from)) {
+                //通知好友有新消息
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                    'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
+                ]));
+                //通知好友更新列表
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('addList', [
+                    'type' => 'friend', //列表类型，只支持friend和group两种
+                    'avatar' => $myMemberInfo->avatar, //好友头像
+                    'username' => $myMemberInfo->account, //好友昵称
+                    'groupid' => $msgboxObj->friend_group_id,//所在的分组id
+                    'id' => $myMemberInfo->id, //好友ID
+                    'sign' => $myMemberInfo->signature //好友签名
+                ]));
+            }
+        } else {
+            //加群
+            GroupMember::create([
+                'group_id' => $msgboxObj->group_id,
+                'member_id' => $msgboxObj->from,
+                'add_time' => time()
+            ]);
+
+            //发送同意加群通知
+            $groupInfo = Group::find($msgboxObj->group_id);
+            Msgbox::create([
+                'type' => Msgbox::TYPE_JOIN_GROUP_SYSTEM,
+                'status' => Msgbox::STATUS_IGNORED,
+                'to' => $msgboxObj->from,//消息接收者
+                'content' => '你已加入群 [' . $groupInfo['account'] . ']',
+                'send_time' => time(),
+            ]);
+            if (Gateway::isUidOnline($msgboxObj->from)) {
+                //通知好友有新消息
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                    'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
+                ]));
+                //通知好友更新列表
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('addList', [
+                    'type' => 'group', //列表类型，只支持friend和group两种
+                    'avatar' => $groupInfo->avatar, //群组头像
+                    'groupname' => $groupInfo->group_name,//群组名称
+                    'id' => $groupInfo->id //群组id
+                ]));
+            }
+        }
+
+        return json(Toolkit::success());
+    }
+
+
+    /**
+     * 拒绝好友、群申请
+     * @return \think\response\Json
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public function refuseFriend()
+    {
+        $post = $this->request->post();
+        $rule = [
             'id' => 'require',
-            'group' => 'require',
+            'type' => ['require', 'in:friend,group']
         ];
         try {
             $this->validate($post, $rule);
@@ -616,34 +718,45 @@ class Chat extends BaseController
             return json(Toolkit::error('消息不存在'));
         }
 
-        //互相加好友
-        $friendModel = new Friend();
-        $friendModel->saveAll([
-            ['group_id' => $post['group'], 'member_id' => $msgboxObj->from],
-            ['group_id' => $msgboxObj->friend_group_id, 'member_id' => $this->userInfo['id']],
-        ]);
-        //更新消息通知
-        $msgboxObj->status = Msgbox::STATUS_AGREED;
-        $msgboxObj->read_time = time();
+        //更新消息状态
+        $msgboxObj->status = Msgbox::STATUS_REFUSED;
         $msgboxObj->save();
 
-        $toMemberInfo = Member::find($msgboxObj->to);
-        Msgbox::create([
-            'type' => Msgbox::TYPE_MAKE_FRIEND_SYSTEM,
-            'to' => $msgboxObj->from,
-            'content' => '你和 [' . $toMemberInfo->account . '] 已经是好友了',
-            'send_time' => time(),
-        ]);
-        if (Gateway::isUidOnline($msgboxObj->from)) {
-            Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
-                'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
-            ]));
+        if ($post['type'] === 'friend') {
+            //发送拒绝添加好友通知
+            $myMemberInfo = Member::find($this->userInfo['id']);
+            Msgbox::create([
+                'type' => Msgbox::TYPE_MAKE_FRIEND_SYSTEM,
+                'status' => Msgbox::STATUS_IGNORED,
+                'to' => $msgboxObj->from,//消息接收者
+                'content' => '[' . $myMemberInfo->account . '] 拒绝了你的好友申请',
+                'send_time' => time(),
+            ]);
+            if (Gateway::isUidOnline($msgboxObj->from)) {
+                //通知好友有新消息
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                    'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
+                ]));
+            }
+        } else {
+            //发送同意加群通知
+            $groupInfo = Group::find($msgboxObj->group_id);
+            Msgbox::create([
+                'type' => Msgbox::TYPE_JOIN_GROUP_SYSTEM,
+                'status' => Msgbox::STATUS_IGNORED,
+                'to' => $msgboxObj->from,//消息接收者
+                'content' => '群主拒绝了你的加群 [' . $groupInfo['account'] . '] 申请',
+                'send_time' => time(),
+            ]);
+            if (Gateway::isUidOnline($msgboxObj->from)) {
+                //通知好友有新消息
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                    'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
+                ]));
+            }
         }
-    }
 
-    public function refuseFriend()
-    {
-
+        return json(Toolkit::success());
     }
 
     /**
@@ -715,7 +828,7 @@ class Chat extends BaseController
             $statusText = $online ? 'online' : 'offline';
             foreach ($friendMemberIds as $memberId) {
                 if (Gateway::isUidOnline($memberId)) {
-                    Gateway::sendToUid($memberId, $this->makeMessage('friendStatus', [
+                    Gateway::sendToUid($memberId, $this->makeMessage('setFriendStatus', [
                         'id' => $this->userInfo['id'],
                         'status' => $statusText
                     ]));
