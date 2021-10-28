@@ -1,0 +1,14 @@
+[v-cloak] {
+    display: none;
+}
+
+.container .layim-chat-main {
+    height: auto;
+    position: relative;
+}
+
+.container #page {
+    position: absolute;
+    left: 15px;
+    bottom: 10px;
+}

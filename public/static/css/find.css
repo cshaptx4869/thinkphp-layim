@@ -1,0 +1,58 @@
+[v-cloak] {
+    display: none;
+}
+
+.container {
+    margin: 15px;
+}
+
+.recommend {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.recommend > div {
+    display: flex;
+    padding: 10px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #d7d7d7;
+    border-radius: 3px;
+}
+
+.recommend .avatar {
+    width: 100px;
+    height: 100px;
+    margin-right: 10px;
+}
+
+.recommend .avatar img {
+    width: 100%;
+    height: 100%;
+}
+
+.recommend .info p {
+    width: 160px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.recommend .info p:nth-of-type(2) {
+    margin-bottom: 6px;
+}
+
+.recommend .info p:last-of-type {
+    color: #999999;
+    margin-bottom: 10px;
+}
+
+.recommend .info p:last-of-type:hover {
+    cursor: pointer;
+}
+
+.recommend .tips {
+    text-align: center;
+    color: #999999;
+}

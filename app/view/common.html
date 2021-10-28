@@ -7,7 +7,8 @@
   <title>{block name="title"}layuiAdmin std - 通用后台管理模板系统（iframe标准版）{/block}</title>
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
   <link rel="stylesheet" href="__layuiadmin__/layui/css/layui.css" media="all">
   <link rel="stylesheet" href="__layuiadmin__/style/admin.css" media="all">
   {block name="css"}{/block}
@@ -27,7 +28,10 @@
         base: '__layuiadmin__/', //静态资源所在路径
         version: true, //一般用于更新模块缓存，默认不开启。设为 true 即让浏览器不缓存。也可以设为一个固定的值，如：201610
         debug: true //用于开启调试模式，默认 false，如果设为 true，则JS模块的节点会保留在页面
-    });
+    }).extend({ //拓展一个模块别名
+        index: 'lib/index', //主入口模块，会追加base到modules目录
+        toolkit: '../js/toolkit'
+    }).use(['index']);
 </script>
 {block name="js"}{/block}
 </body>

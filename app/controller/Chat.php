@@ -546,7 +546,7 @@ class Chat extends BaseController
             $page = $this->request->get('page', 1);
             $limit = $this->request->get('limit', 10);
             $qb = Msgbox::where('to', $this->userInfo['id'])
-                ->where('status', Msgbox::STATUS_UNREAD);
+                ->whereNotIn('status', [Msgbox::STATUS_AGREED, Msgbox::STATUS_REFUSED]);
             $count = $qb->count();
             $list = $qb->page($page, $limit)
                 ->order('id', 'desc')
@@ -577,6 +577,8 @@ class Chat extends BaseController
                         'href' => null,
                         'read' => $row['status'],
                         'time' => Toolkit::formatDate($row['send_time']),
+                        'read_time' => date('Y-m-d H:i:s', $row['read_time']),
+                        'status' => $row['status'],
                         'userInfo' => isset($fromArrMap[$row['from']]) ? $fromArrMap[$row['from']] : [],
                         'groupInfo' => isset($groupArrMap[$row['group_id']]) ? $groupArrMap[$row['group_id']] : [],
                     ];
@@ -585,6 +587,10 @@ class Chat extends BaseController
 
             return json(Toolkit::success(['list' => $data, 'count' => $count]));
         }
+
+        Msgbox::where('to', $this->userInfo['id'])
+            ->whereNull('read_time')
+            ->update(['read_time' => time()]);
 
         return view();
     }

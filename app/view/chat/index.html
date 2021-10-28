@@ -25,93 +25,14 @@
 
 {block name="js"}
 <script>
-    let skin = '{$skin}';
-    let socketName = '{$socket_name}';
-    layui.extend({
-        index: 'lib/index', //主入口模块，会追加base到modules目录
-    }).use(['index', 'jquery', 'layim', 'layer'], function () {
-        let $ = layui.jquery,
-            layim = layui.layim,
-            layer = layui.layer,
+    layui.use(['layim', 'toolkit'], function () {
+        let skin = '{$skin}',
+            socketName = '{$socket_name}',
             //注意：如果要兼容ie8+，建议你采用 socket.io 的版本
             socket = new WebSocket(socketName),
-            msg = {
-                success: function (msg, callback) {
-                    if (callback === undefined) {
-                        callback = function () {
-                        }
-                    }
-                    return layer.msg(msg, {
-                        icon: 1,
-                        shade: [0.02, '#000'],
-                        scrollbar: false,
-                        time: 2000,
-                        shadeClose: true
-                    }, callback);
-                },
-                error: function (msg, callback) {
-                    if (callback === undefined) {
-                        callback = function () {
-                        }
-                    }
-                    return layer.msg(msg, {
-                        icon: 2,
-                        shade: [0.02, '#000'],
-                        scrollbar: false,
-                        time: 3000,
-                        shadeClose: true
-                    }, callback);
-                }
-            },
-            request = {
-                post: function (option, ok, no, ex) {
-                    return this.ajax('post', option, ok, no, ex);
-                },
-                get: function (option, ok, no, ex) {
-                    return this.ajax('get', option, ok, no, ex);
-                },
-                ajax: function (type, option, ok, no, ex) {
-                    type = type || 'get';
-                    option.url = option.url || '';
-                    option.data = option.data || {};
-                    option.prefix = option.prefix || false;
-                    option.statusName = option.statusName || 'code';
-                    option.statusCode = option.statusCode || 0;
-                    ok = ok || function (res) {
-                    };
-                    no = no || function (res) {
-                        msg.error(res.msg == undefined ? '返回数据格式有误' : res.msg);
-                        return false;
-                    };
-                    ex = ex || function (res) {
-                    };
-                    if (option.url == '') {
-                        msg.error('请求地址不能为空');
-                        return false;
-                    }
-                    $.ajax({
-                        url: option.url,
-                        type: type,
-                        contentType: "application/x-www-form-urlencoded; charset=UTF-8",
-                        dataType: "json",
-                        data: option.data,
-                        timeout: 60000,
-                        success: function (res) {
-                            if (res[option.statusName] == option.statusCode) {
-                                return ok(res);
-                            } else {
-                                return no(res);
-                            }
-                        },
-                        error: function (xhr, textstatus, thrown) {
-                            msg.error('Status:' + xhr.status + '，' + xhr.statusText + '，请稍后再试！', function () {
-                                ex(this);
-                            });
-                            return false;
-                        }
-                    });
-                }
-            };
+            layer = layui.layer,
+            layim = layui.layim,
+            toolkit = layui.toolkit;
 
         //连接成功时触发
         socket.onopen = function (evt) {
@@ -198,14 +119,14 @@
             //触发在线状态切换
             layim.on('online', function (status) {
                 console.log(status); //获得online或者hide
-                request.post({'url': '/chat/online', data: {value: status}})
+                toolkit.request.post({'url': '/chat/online', data: {value: status}})
             });
 
             //触发修改签名
             //当主面板的签名被改动后触发，并返回新的签名
             layim.on('sign', function (value) {
                 console.log(value); //获得新的签名
-                request.post({'url': '/chat/sign', 'data': {value: value}})
+                toolkit.request.post({'url': '/chat/sign', 'data': {value: value}})
             });
 
             //触发更换背景皮肤
@@ -213,7 +134,7 @@
             layim.on('setSkin', function (filename, src) {
                 console.log(filename); //获得文件名，如：1.jpg
                 console.log(src); //获得背景路径，如：http://res.layui.com/layui/src/css/modules/layim/skin/1.jpg
-                request.post({'url': '/chat/setSkin', 'data': {value: src}})
+                toolkit.request.post({'url': '/chat/setSkin', 'data': {value: src}})
             });
 
             //触发发送的消息
@@ -222,7 +143,7 @@
                 //res.mine 包含我发送的消息及我的信息
                 //res.to 对方的信息; type聊天类型，一般分friend和group两种，group即群聊
                 console.log(res);
-                request.post({'url': '/chat/sendMessage', 'data': res})
+                toolkit.request.post({'url': '/chat/sendMessage', 'data': res})
             });
 
             //触发查看群员
@@ -247,7 +168,7 @@
                         layim.setChatStatus('<span style="color:#999999;">离线</span>');
                     }
                 } else if (type === 'group') {
-                    request.post({
+                    toolkit.request.post({
                         'url': '/chat/enterGroup', data: {
                             system: true,
                             id: obj.data.id,
@@ -272,7 +193,7 @@
             console.log(res);
             switch (res.emit) {
                 case 'bind':
-                    request.post({'url': '/chat/bind', data: res.data});
+                    toolkit.request.post({'url': '/chat/bind', data: res.data});
                     break;
                 case 'friendStatus':
                     layim.setFriendStatus(res.data.id, res.data.status);
@@ -282,6 +203,7 @@
                     layim.getMessage(res.data);
                     break;
                 case 'msgbox':
+                    //消息盒子 在主面板的消息盒子icon上不断显隐提示，直到点击后自动消失
                     res.data.count && layim.msgbox(res.data.count);
                     break;
                 case 'pong':
@@ -298,8 +220,8 @@
         //出错时触发
         socket.onerror = function (evt) {
             console.log('socket onerror');
-            msg.error(socketName + ' 连接失败');
+            toolkit.msg.error(socketName + ' 连接失败');
         };
-    });
+    })
 </script>
 {/block}

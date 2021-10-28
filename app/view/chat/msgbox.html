@@ -1,251 +1,121 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>消息盒子</title>
+{extend name="common" /}
 
-  <link rel="stylesheet" href="__layuiadmin__/layui/css/layui.css?v=1">
-  <style>
-    .layim-msgbox {
-      margin: 15px;
-    }
+{block name="content"}
+<link rel="stylesheet" href="__css__/msgbox.css">
 
-    .layim-msgbox li {
-      position: relative;
-      margin-bottom: 10px;
-      padding: 0 130px 10px 60px;
-      line-height: 22px;
-      border-bottom: 1px dotted #e2e2e2;
-    }
+<div id="app" v-cloak>
+  <div class="container">
+    <ul class="layim-msgbox">
+      <block v-if="item.from" v-for="(item,index) in list" :key="index">
+        <li>
+          <a href="#" target="_blank">
+            <img :src="item.userInfo.avatar" class="layui-circle layim-msgbox-avatar" alt="头像">
+          </a>
+          <p class="layim-msgbox-user">
+            <a href="#" target="_blank">{{ item.userInfo.username || '' }}</a>
+            <span>{{ item.time }}</span>
+          </p>
+          <p class="layim-msgbox-content">
+            {{ item.content }}<span>{{ item.remark ? '附言: ' + item.remark : '' }}</span>
+          </p>
+          <p class="layim-msgbox-btn" v-if="item.status === 0">
+            <button type="button" class="layui-btn layui-btn-small" @click="agree(item,$event)">同意</button>
+            <button type="button" class="layui-btn layui-btn-small layui-btn-primary" @click="refuse(item,$event)">拒绝
+            </button>
+          </p>
+        </li>
+      </block>
+      <block v-else>
+        <li class="layim-msgbox-system">
+          <p><em>系统：</em>{{ item.content }}<span>{{ item.time }}</span></p>
+        </li>
+      </block>
+    </ul>
+  </div>
+</div>
+{/block}
 
-    .layim-msgbox .layim-msgbox-tips {
-      margin: 0;
-      padding: 10px 0;
-      border: none;
-      text-align: center;
-      color: #999;
-    }
-
-    .layim-msgbox .layim-msgbox-system {
-      padding: 0 10px 10px 10px;
-    }
-
-    .layim-msgbox li p span {
-      padding-left: 5px;
-      color: #999;
-    }
-
-    .layim-msgbox li p em {
-      font-style: normal;
-      color: #FF5722;
-    }
-
-    .layim-msgbox-avatar {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 50px;
-      height: 50px;
-    }
-
-    .layim-msgbox-user {
-      padding-top: 5px;
-    }
-
-    .layim-msgbox-content {
-      margin-top: 3px;
-    }
-
-    .layim-msgbox .layui-btn-small {
-      padding: 0 15px;
-      margin-left: 5px;
-    }
-
-    .layim-msgbox-btn {
-      position: absolute;
-      right: 0;
-      top: 12px;
-      color: #999;
-    }
-  </style>
-</head>
-<body>
-
-<ul class="layim-msgbox" id="LAY_view"></ul>
-
-<textarea title="消息模版" id="LAY_tpl" style="display:none;">
-{{# layui.each(d.data, function(index, item){
-  if(item.from){ }}
-    <li data-id="{{ item.id }}" data-from="{{ item.from }}" data-group="{{ item.group }}" data-type="{{ item.type }}">
-      <a href="#" target="_blank">
-        <img src="{{ item.userInfo.avatar }}" class="layui-circle layim-msgbox-avatar">
-      </a>
-      <p class="layim-msgbox-user">
-        <a href="#" target="_blank">{{ item.userInfo.username||'' }}</a>
-        <span>{{ item.time }}</span>
-      </p>
-      <p class="layim-msgbox-content">
-        {{ item.content }}
-        <span>{{ item.remark ? '附言: '+item.remark : '' }}</span>
-      </p>
-      <p class="layim-msgbox-btn">
-        <button class="layui-btn layui-btn-small" data-type="agree">同意</button>
-        <button class="layui-btn layui-btn-small layui-btn-primary" data-type="refuse">拒绝</button>
-      </p>
-    </li>
-  {{# } else { }}
-    <li class="layim-msgbox-system">
-      <p><em>系统：</em>{{ item.content }}<span>{{ item.time }}</span></p>
-    </li>
-  {{# }
-}); }}
-</textarea>
-
-<!--
-上述模版采用了 laytpl 语法，不了解的同学可以去看下文档：http://www.layui.com/doc/modules/laytpl.html
--->
-
-<script src="__layuiadmin__/layui/layui.js?v=1"></script>
+{block name="js"}
+<script src="__js__/vue.min.js"></script>
 <script>
-    layui.use(['layim', 'flow'], function () {
-        var layim = layui.layim,
-            layer = layui.layer,
-            laytpl = layui.laytpl,
-            $ = layui.jquery,
-            flow = layui.flow,
-            limit = 10;
+    layui.use(['layim', 'toolkit', 'jquery'], function () {
+        var toolkit = layui.toolkit,
+            $ = layui.jquery;
 
-        var users = {};
-        var groups = {};
-
-        //请求消息
-        var renderMsg = function (page, callback) {
-            $.get('/chat/msgbox', {
-                page: page || 1,
-                limit: limit
-            }, function (res) {
-                if (res.code != 0) {
-                    return layer.msg(res.msg);
-                }
-
-                //记录来源用户信息
-                layui.each(res.data.list, function (index, item) {
-                    users[item.from] = item.userInfo;
-                    groups[item.group] = item.groupInfo;
-                });
-
-                callback && callback(res.data.list, res.data.count);
-            });
-        };
-
-        //消息信息流
-        flow.load({
-            elem: '#LAY_view',  //流加载容器
-            isAuto: false,
-            end: '<li class="layim-msgbox-tips">暂无更多新消息</li>',
-            done: function (page, next) { //加载下一页
-                renderMsg(page, function (data, count) {
-                    var html = laytpl(LAY_tpl.value).render({
-                        data: data,
-                        page: page
-                    });
-                    next(html, page < Math.ceil(count / limit));
-                });
-            }
-        });
-
-        //打开页面即把消息标记为已读
-        /*
-        $.post('/message/read', {
-          type: 1
-        });
-        */
-
-        //操作
-        var active = {
-            //同意
-            agree: function (othis) {
-                var li = othis.parents('li'),
-                    id = li.data('id'),
-                    type = li.data('type');
-
-                if (type === 0) {
-                    var userId = li.data('from'),
-                        userInfo = users[userId];
-                    //好友分组面板
-                    parent.layui.layim.setFriendGroup({
-                        type: 'friend',
-                        username: userInfo.username,//好友昵称，若申请加群，参数为：groupname
-                        avatar: userInfo.avatar,//头像
-                        group: parent.layui.layim.cache().friend,  //获取好友分组数据
-                        submit: function (group, index) {
-                            //同意后，将好友追加到主面板
-                            $.post('/chat/agreeFriend', {
-                                id: id, //对方用户ID
-                                group: group //我设定的好友分组
-                            }, function (res) {
-                                if (res.code != 0) {
-                                    return layer.msg(res.msg);
-                                }
-
-                                //有好友或者群新增时 主面板同步添加的信息
-                                parent.layui.layim.addList({
-                                    type: 'friend', //列表类型，只支持friend和group两种
-                                    avatar: userInfo.avatar, //好友头像
-                                    username: userInfo.account, //好友昵称
-                                    groupid: group, //所在的分组id
-                                    id: from,//好友ID
-                                    sign: userInfo.signature //好友签名
-                                });
-                                parent.layer.close(index);
-                                othis.parent().html('已同意');
-                            });
-                        }
-                    });
-                } else if (type === 2) {
-                    var groupId = li.data('group'),
-                        groupInfo = groups[groupId];
-                    console.log({
-                        type: 'group',
-                        avatar: groupInfo.avatar, //群组头像
-                        groupname: groupInfo.username, //群组名称
-                        id: groupId //群组id
-                    })
-                    parent.layui.layim.addList({
-                        type: 'group',
-                        avatar: groupInfo.avatar, //群组头像
-                        groupname: groupInfo.username, //群组名称
-                        id: groupId //群组id
-                    });
-                    othis.parent().html('已同意');
-                }
+        var app = new Vue({
+            el: '#app',
+            mounted() {
+                this.getList();
             },
-
-            //拒绝
-            refuse: function (othis) {
-                var li = othis.parents('li'),
-                    id = li.data('id');
-
-                layer.confirm('确定拒绝吗？', function (index) {
-                    $.post('/chat/refuseFriend', {
-                        id: id
+            data: {
+                search: {
+                    page: 1,
+                    limit: 10
+                },
+                list: []
+            },
+            methods: {
+                getList() {
+                    var _this = this;
+                    toolkit.request.get({
+                        url: '/chat/msgbox',
+                        data: _this.search
                     }, function (res) {
-                        if (res.code != 0) {
-                            return layer.msg(res.msg);
-                        }
-                        layer.close(index);
-                        othis.parent().html('<em>已拒绝</em>');
+                        _this.list = res.data.list;
                     });
-                });
+                },
+                //同意
+                agree(item, event) {
+                    console.log($(event.target).parent().html('已同意'))
+                    //加好友
+                    if (item.type === 0) {
+                        //好友分组面板
+                        parent.layui.layim.setFriendGroup({
+                            type: 'friend',
+                            username: item.userInfo.username,//好友昵称，若申请加群，参数为：groupname
+                            avatar: item.userInfo.avatar,//头像
+                            group: parent.layui.layim.cache().friend,  //获取好友分组数据
+                            submit: function (group, index) {
+                                //同意后，将好友追加到主面板
+                                toolkit.request.post({
+                                    url: '/chat/agreeFriend',
+                                    data: {
+                                        id: item.id, //对方用户ID
+                                        group: group //我设定的好友分组
+                                    }
+                                }, function (res) {
+                                    //有好友或者群新增时 主面板同步添加的信息
+                                    parent.layui.layim.addList({
+                                        type: 'friend', //列表类型，只支持friend和group两种
+                                        avatar: item.userInfo.avatar, //好友头像
+                                        username: item.userInfo.account, //好友昵称
+                                        groupid: group, //所在的分组id
+                                        id: item.from,//好友ID
+                                        sign: item.userInfo.signature //好友签名
+                                    });
+                                    parent.layer.close(index);
+                                    $(event.target).parent().html('已同意');
+                                });
+                            }
+                        });
+                    }
+                },
+                //拒绝
+                refuse(item, event) {
+                    toolkit.msg.confirm('确定拒绝吗？', function (index) {
+                        toolkit.request.post({
+                            url: '/chat/refuseFriend',
+                            data: {
+                                id: item.id
+                            }
+                        }, function (res) {
+                            toolkit.msg.close(index);
+                            $(event.target).parent().html('<em>已拒绝</em>');
+                        })
+                    });
+                }
             }
-        };
-
-        $('body').on('click', '.layui-btn', function () {
-            var othis = $(this), type = othis.data('type');
-            active[type] ? active[type].call(this, othis) : '';
         });
     });
 </script>
-</body>
-</html>
+{/block}
