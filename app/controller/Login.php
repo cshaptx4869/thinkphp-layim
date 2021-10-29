@@ -39,6 +39,9 @@ class Login extends BaseController
                 return json(Toolkit::error('用户名或密码错误'));
             }
             $memberInfo->login_time = time();
+            if ($memberInfo->status !== Member::STATUS_HIDE) {
+                $memberInfo->status = Member::STATUS_ONLINE;
+            }
             $memberInfo->save();
             session('userInfo', [
                 'id' => $memberInfo->id,
@@ -87,6 +90,19 @@ class Login extends BaseController
         }
 
         return view();
+    }
+
+    /**
+     * 退出登录
+     * @return \think\response\Json
+     */
+    public function signOut()
+    {
+        $chat = new Chat($this->app);
+        $chat->offline();
+        session('userInfo', null);
+
+        return json(Toolkit::success());
     }
 
     public function forget()

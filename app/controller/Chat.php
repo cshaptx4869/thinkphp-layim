@@ -77,6 +77,15 @@ class Chat extends BaseController
     }
 
     /**
+     * 下线通知
+     * @throws \think\db\exception\DbException
+     */
+    public function offline()
+    {
+        $this->notifyFriendOnlineStatus(false);
+    }
+
+    /**
      * 初始化
      * @return \think\response\Json
      * @throws \think\db\exception\DataNotFoundException
@@ -89,7 +98,7 @@ class Chat extends BaseController
         $mineData = [
             'username' => $memberInfo->nickname,//我的昵称
             'id' => $memberInfo->id,//我的ID
-            'status' => $memberInfo->status == Member::STATUS_ONLINE ? 'online' : 'hide',//在线状态 online：在线、hide：隐身
+            'status' => Member::getStatusText($memberInfo->status),//在线状态 online：在线、hide：隐身
             'sign' => $memberInfo->signature,//我的签名
             'avatar' => $memberInfo->avatar//我的头像
         ];
@@ -124,7 +133,7 @@ class Chat extends BaseController
                             'id' => $groupFriend['member_id'],//好友ID
                             'avatar' => $groupFriend['avatar'],//好友头像
                             'sign' => $groupFriend['signature'],//好友签名
-                            'status' => $groupFriend['status'] == Member::STATUS_ONLINE && Gateway::isUidOnline($groupFriend['member_id']) ? 'online' : 'offline'//若值为offline代表离线，online或者不填为在线
+                            'status' => Member::getStatusText($memberInfo->status)//若值为offline代表离线，online或者不填为在线
                         ];
                         unset($groupFriends[$k]);
                     }
@@ -381,7 +390,7 @@ class Chat extends BaseController
         }
 
         $memberObj = Member::find($this->userInfo['id']);
-        $memberObj->status = $post['value'] === 'online' ? Member::STATUS_ONLINE : Member::STATUS_HIDE;
+        $memberObj->status = Member::getStatusValue($post['value']);
         $memberObj->save();
 
         $this->notifyFriendOnlineStatus($post['value'] === 'online');
@@ -569,7 +578,7 @@ class Chat extends BaseController
             if ($list) {
                 //发送者信息
                 $fromArr = Member::whereIn('id', array_column($list, 'from'))
-                    ->fieldRaw("id,account,nickname,avatar,signature,if(status=1,'online','offline') status")
+                    ->fieldRaw("id,account,nickname,avatar,signature,status")
                     ->select()
                     ->toArray();
                 $fromArrMap = Toolkit::setArrayIndex($fromArr, 'id');
@@ -579,6 +588,11 @@ class Chat extends BaseController
                     ->toArray();
                 $groupArrMap = Toolkit::setArrayIndex($groupArr, 'id');
                 foreach ($list as $row) {
+                    $userInfo =[];
+                    if (isset($fromArrMap[$row['from']])) {
+                        $userInfo = $fromArrMap[$row['from']];
+                        $userInfo['status'] = Member::getStatusText($userInfo['status']);
+                    }
                     $data[] = [
                         'id' => $row['id'],
                         'content' => $row['content'],
@@ -592,7 +606,7 @@ class Chat extends BaseController
                         'time' => Toolkit::formatDate($row['send_time']),
                         'read_time' => date('Y-m-d H:i:s', $row['read_time']),
                         'status' => $row['status'],//0待处理 1同意 2拒绝 3无须处理
-                        'userInfo' => isset($fromArrMap[$row['from']]) ? $fromArrMap[$row['from']] : [],
+                        'userInfo' => $userInfo,
                         'groupInfo' => isset($groupArrMap[$row['group_id']]) ? $groupArrMap[$row['group_id']] : [],
                     ];
                 }
@@ -646,7 +660,7 @@ class Chat extends BaseController
             ]);
 
             //发送同意添加好友通知
-            $myMemberInfo = Member::fieldRaw("id,account,nickname,avatar,signature,if(status=1,'online','offline') status")
+            $myMemberInfo = Member::fieldRaw("id,account,nickname,avatar,signature,status")
                 ->find($this->userInfo['id']);
             Msgbox::create([
                 'type' => Msgbox::TYPE_MAKE_FRIEND_SYSTEM,
@@ -668,7 +682,7 @@ class Chat extends BaseController
                     'groupid' => $msgboxObj->friend_group_id,//所在的分组id
                     'id' => $myMemberInfo->id, //好友ID
                     'sign' => $myMemberInfo->signature, //好友签名
-                    'status' => $myMemberInfo->status
+                    'status' => Member::getStatusText($myMemberInfo->status)
                 ]));
             }
         } else {

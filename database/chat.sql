@@ -11,7 +11,7 @@
  Target Server Version : 50724
  File Encoding         : 65001
 
- Date: 28/10/2021 22:53:59
+ Date: 29/10/2021 16:23:24
 */
 
 SET NAMES utf8mb4;
@@ -35,8 +35,8 @@ CREATE TABLE `chat_friend`  (
 -- ----------------------------
 -- Records of chat_friend
 -- ----------------------------
-INSERT INTO `chat_friend` VALUES (1, 1, 3, '', '2021-10-28 22:50:41', '2021-10-28 22:50:41', NULL);
-INSERT INTO `chat_friend` VALUES (2, 5, 1, '', '2021-10-28 22:50:41', '2021-10-28 22:50:41', NULL);
+INSERT INTO `chat_friend` VALUES (1, 4, 1, '', '2021-10-29 16:19:41', '2021-10-29 16:19:41', NULL);
+INSERT INTO `chat_friend` VALUES (2, 1, 2, '', '2021-10-29 16:19:41', '2021-10-29 16:19:41', NULL);
 
 -- ----------------------------
 -- Table structure for chat_friend_group
@@ -51,7 +51,7 @@ CREATE TABLE `chat_friend_group`  (
   `update_time` timestamp(0) NULL DEFAULT NULL,
   `delete_time` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '会员好友分组表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '会员好友分组表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chat_friend_group
@@ -64,6 +64,7 @@ INSERT INTO `chat_friend_group` VALUES (5, 3, '我的好友', 0, '2021-10-27 14:
 INSERT INTO `chat_friend_group` VALUES (6, 4, '我的好友', 0, '2021-10-27 14:39:11', NULL, NULL);
 INSERT INTO `chat_friend_group` VALUES (7, 5, '我的好友', 0, '2021-10-27 14:39:17', NULL, NULL);
 INSERT INTO `chat_friend_group` VALUES (8, 6, '我的好友', 0, '2021-10-27 14:39:24', NULL, NULL);
+INSERT INTO `chat_friend_group` VALUES (9, 7, '我的好友', 0, '2021-10-29 13:50:42', '2021-10-29 13:50:42', NULL);
 
 -- ----------------------------
 -- Table structure for chat_group
@@ -87,7 +88,7 @@ CREATE TABLE `chat_group`  (
 -- Records of chat_group
 -- ----------------------------
 INSERT INTO `chat_group` VALUES (1, '1122546488', '老司机群', '/static/images/gtva1.jpg', 1, '今晚秋名山不见不散', 0, '2020-11-07 16:07:29', NULL, NULL);
-INSERT INTO `chat_group` VALUES (2, '8739481981', 'Fly社区官方群', '/static/images/gtva2.jpg', 1, '带你装逼带你飞 ︿(￣︶￣)︿', 0, '2020-11-09 10:22:12', NULL, NULL);
+INSERT INTO `chat_group` VALUES (2, '8739481981', 'Fly社区官方群', '/static/images/gtva2.jpg', 2, '带你装逼带你飞 ︿(￣︶￣)︿', 0, '2020-11-09 10:22:12', NULL, NULL);
 
 -- ----------------------------
 -- Table structure for chat_group_member
@@ -112,8 +113,8 @@ CREATE TABLE `chat_group_member`  (
 -- Records of chat_group_member
 -- ----------------------------
 INSERT INTO `chat_group_member` VALUES (1, 1, 1, 1604765249, 0, 0, '', 0, '2020-11-07 16:07:29', NULL, NULL);
-INSERT INTO `chat_group_member` VALUES (2, 2, 1, 1604917332, 0, 0, '', 0, '2020-11-09 10:22:12', NULL, NULL);
-INSERT INTO `chat_group_member` VALUES (3, 1, 3, 1635432709, 1, 0, '', 0, '2021-10-28 22:51:49', '2021-10-28 22:51:49', NULL);
+INSERT INTO `chat_group_member` VALUES (2, 2, 2, 1604917332, 0, 0, '', 0, '2020-11-09 10:22:12', NULL, NULL);
+INSERT INTO `chat_group_member` VALUES (3, 2, 1, 1635495631, 1, 0, '', 0, '2021-10-29 16:20:31', '2021-10-29 16:20:31', NULL);
 
 -- ----------------------------
 -- Table structure for chat_member
@@ -127,23 +128,24 @@ CREATE TABLE `chat_member`  (
   `nickname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '匿名' COMMENT '昵称',
   `avatar` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '/static/images/pkq.png' COMMENT '头像',
   `signature` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '签名',
-  `status` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '在线状态 0隐身 1在线',
+  `status` tinyint(3) UNSIGNED NOT NULL DEFAULT 1 COMMENT '在线状态 0在线 1下线 2隐身',
   `login_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '上次登录时间',
   `create_time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `update_time` timestamp(0) NULL DEFAULT NULL,
   `delete_time` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '会员表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '会员表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chat_member
 -- ----------------------------
-INSERT INTO `chat_member` VALUES (1, 'cshaptx4869', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '白開水', '/static/images/pkq.png', '淡而无味', 1, 0, '2020-11-07 11:00:16', '2021-10-24 11:25:02', NULL);
-INSERT INTO `chat_member` VALUES (2, 'xianxin', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '贤心', '/static/images/tva1.jpg', '代码在囧途，也要写到底', 1, 0, '2020-11-07 12:41:45', '2021-10-25 11:38:49', NULL);
-INSERT INTO `chat_member` VALUES (3, 'liuxiaotao', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '刘小涛', '/static/images/tva4.jpg', '如约而至，不负姊妹欢乐颂', 1, 0, '2020-11-07 12:43:20', '2021-10-27 13:58:51', NULL);
+INSERT INTO `chat_member` VALUES (1, 'cshaptx4869', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '白開水', '/static/images/pkq.png', '淡而无味', 0, 0, '2020-11-07 11:00:16', '2021-10-29 14:49:00', NULL);
+INSERT INTO `chat_member` VALUES (2, 'xianxin', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '贤心', '/static/images/tva1.jpg', '代码在囧途，也要写到底', 2, 1635495552, '2020-11-07 12:41:45', '2021-10-29 16:22:39', NULL);
+INSERT INTO `chat_member` VALUES (3, 'liuxiaotao', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '刘小涛', '/static/images/tva4.jpg', '如约而至，不负姊妹欢乐颂', 0, 1635495430, '2020-11-07 12:43:20', '2021-10-29 16:17:11', NULL);
 INSERT INTO `chat_member` VALUES (4, 'xiexiaonan', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '谢晓楠', '/static/images/tva2.jpg', '让天下没有难写的代码', 0, 0, '2020-11-07 12:44:26', NULL, NULL);
 INSERT INTO `chat_member` VALUES (5, 'luoxiaofeng', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '罗小凤', '/static/images/tva4.jpg', '在自己实力不济的时候，不要去相信什么媒体和记者。他们不是善良的人，有时候候他们的采访对当事人而言就是陷阱', 0, 0, '2020-11-07 15:49:33', NULL, NULL);
 INSERT INTO `chat_member` VALUES (6, 'xuxiaozheng', 'f7825af16d0d23e3dbb7571969c78aa3', '123!@#', '徐小峥', '/static/images/tva1.jpg', '我瘋了！這也太準了吧 超級笑點低', 0, 0, '2020-11-07 16:02:50', NULL, NULL);
+INSERT INTO `chat_member` VALUES (7, 'zhangxiaofan', '41ff5530105dfd4dc84e60e3d1286687', 'U3pyET', '张小凡', '/static/images/pkq.png', 'Hi', 0, 1635486697, '2021-10-29 13:50:42', '2021-10-29 13:51:37', NULL);
 
 -- ----------------------------
 -- Table structure for chat_msgbox
@@ -165,19 +167,15 @@ CREATE TABLE `chat_msgbox`  (
   `update_time` timestamp(0) NULL DEFAULT NULL,
   `delete_time` timestamp(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '通知表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chat_msgbox
 -- ----------------------------
-INSERT INTO `chat_msgbox` VALUES (1, 3, 1, 0, 2, '加我', '申请添加你为好友', 5, NULL, 1635432607, 1635432609, '2021-10-28 22:50:07', '2021-10-28 22:50:15', NULL);
-INSERT INTO `chat_msgbox` VALUES (2, 0, 3, 1, 3, NULL, '[cshaptx4869] 拒绝了你的好友申请', NULL, NULL, 1635432615, 1635432622, '2021-10-28 22:50:15', '2021-10-28 22:50:15', NULL);
-INSERT INTO `chat_msgbox` VALUES (3, 3, 1, 0, 1, '加我呗', '申请添加你为好友', 5, NULL, 1635432633, 1635432636, '2021-10-28 22:50:34', '2021-10-28 22:50:40', NULL);
-INSERT INTO `chat_msgbox` VALUES (4, 0, 3, 1, 3, NULL, '你和 [cshaptx4869] 已经是好友了', NULL, NULL, 1635432641, 1635432658, '2021-10-28 22:50:41', '2021-10-28 22:50:41', NULL);
-INSERT INTO `chat_msgbox` VALUES (5, 3, 1, 2, 2, '拉我', '申请加入群 [老司机群]', NULL, 1, 1635432671, 1635432675, '2021-10-28 22:51:11', '2021-10-28 22:51:20', NULL);
-INSERT INTO `chat_msgbox` VALUES (6, 0, 3, 3, 3, NULL, '群主拒绝了你的加群 [1122546488] 申请', NULL, NULL, 1635432679, 1635432684, '2021-10-28 22:51:20', '2021-10-28 22:51:20', NULL);
-INSERT INTO `chat_msgbox` VALUES (7, 3, 1, 2, 1, '拉我呗', '申请加入群 [老司机群]', NULL, 1, 1635432701, 1635432704, '2021-10-28 22:51:41', '2021-10-28 22:51:49', NULL);
-INSERT INTO `chat_msgbox` VALUES (8, 0, 3, 3, 3, NULL, '你已加入群 [1122546488]', NULL, NULL, 1635432709, 1635432715, '2021-10-28 22:51:49', '2021-10-28 22:51:49', NULL);
+INSERT INTO `chat_msgbox` VALUES (1, 1, 2, 0, 1, '大佬好', '申请添加你为好友', 1, NULL, 1635495576, 1635495579, '2021-10-29 16:19:37', '2021-10-29 16:19:41', NULL);
+INSERT INTO `chat_msgbox` VALUES (2, 0, 1, 1, 3, NULL, '你和 [xianxin] 已经是好友了', NULL, NULL, 1635495581, 1635495585, '2021-10-29 16:19:41', '2021-10-29 16:19:41', NULL);
+INSERT INTO `chat_msgbox` VALUES (3, 1, 2, 2, 1, '大佬拉我', '申请加入群 [Fly社区官方群]', NULL, 2, 1635495626, 1635495629, '2021-10-29 16:20:26', '2021-10-29 16:20:31', NULL);
+INSERT INTO `chat_msgbox` VALUES (4, 0, 1, 3, 3, NULL, '你已加入群 [8739481981]', NULL, NULL, 1635495631, 1635495637, '2021-10-29 16:20:31', '2021-10-29 16:20:31', NULL);
 
 -- ----------------------------
 -- Table structure for chat_record
@@ -201,10 +199,10 @@ CREATE TABLE `chat_record`  (
 -- ----------------------------
 -- Records of chat_record
 -- ----------------------------
-INSERT INTO `chat_record` VALUES (1, 3, 1, '你好', 'friend', 1635432775, '2021-10-28 22:52:56', '2021-10-28 22:52:56', NULL);
-INSERT INTO `chat_record` VALUES (2, 1, 3, '你好呀', 'friend', 1635432784, '2021-10-28 22:53:04', '2021-10-28 22:53:04', NULL);
-INSERT INTO `chat_record` VALUES (3, 3, 1, '大家好', 'group', 1635432802, '2021-10-28 22:53:23', '2021-10-28 22:53:23', NULL);
-INSERT INTO `chat_record` VALUES (4, 1, 1, '欢迎 欢迎━(*｀∀´*)ノ亻!', 'group', 1635432819, '2021-10-28 22:53:39', '2021-10-28 22:53:39', NULL);
+INSERT INTO `chat_record` VALUES (1, 2, 1, '地方', 'friend', 1635495599, '2021-10-29 16:20:00', '2021-10-29 16:20:00', NULL);
+INSERT INTO `chat_record` VALUES (2, 1, 2, '咚咚咚', 'friend', 1635495608, '2021-10-29 16:20:08', '2021-10-29 16:20:08', NULL);
+INSERT INTO `chat_record` VALUES (3, 1, 2, '是是是', 'group', 1635495651, '2021-10-29 16:20:52', '2021-10-29 16:20:52', NULL);
+INSERT INTO `chat_record` VALUES (4, 1, 2, '123', 'friend', 1635495772, '2021-10-29 16:22:53', '2021-10-29 16:22:53', NULL);
 
 -- ----------------------------
 -- Table structure for chat_skin
@@ -213,8 +211,7 @@ DROP TABLE IF EXISTS `chat_skin`;
 CREATE TABLE `chat_skin`  (
   `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `member_id` int(11) UNSIGNED NOT NULL COMMENT '会员id',
-  `url` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '皮肤地址',
-  `is_user_upload` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '0默认 1用户自定义',
+  `filename` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '皮肤文件名',
   `create_time` timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
   `update_time` timestamp(0) NULL DEFAULT NULL,
   `delete_time` timestamp(0) NULL DEFAULT NULL,
@@ -224,7 +221,7 @@ CREATE TABLE `chat_skin`  (
 -- ----------------------------
 -- Records of chat_skin
 -- ----------------------------
-INSERT INTO `chat_skin` VALUES (1, 1, 'http://chat.test/static/layuiadmin/layui/css/modules/layim/skin/4.jpg', 0, '2021-10-22 17:22:49', NULL, NULL);
-INSERT INTO `chat_skin` VALUES (2, 2, 'http://chat.test/static/layuiadmin/layui/css/modules/layim/skin/1.jpg', 0, '2021-10-24 10:58:15', NULL, NULL);
+INSERT INTO `chat_skin` VALUES (1, 1, '3.jpg', '2021-10-22 17:22:49', '2021-10-29 14:43:31', NULL);
+INSERT INTO `chat_skin` VALUES (2, 2, '4.jpg', '2021-10-24 10:58:15', '2021-10-29 14:45:58', NULL);
 
 SET FOREIGN_KEY_CHECKS = 1;
