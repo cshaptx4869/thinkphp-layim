@@ -14,7 +14,7 @@
               <img :src="item.userInfo.avatar" class="layui-circle layim-msgbox-avatar" alt="头像">
             </a>
             <p class="layim-msgbox-user">
-              <a href="#" target="_blank">{{ item.userInfo.account || '' }}</a>
+              <a href="#" target="_blank">{{ item.userInfo.nickname || '' }}</a>
               <span>{{ item.time }}</span>
             </p>
             <p class="layim-msgbox-content">
@@ -124,10 +124,11 @@
                                     parent.layui.layim.addList({
                                         type: 'friend', //列表类型，只支持friend和group两种
                                         avatar: item.userInfo.avatar, //好友头像
-                                        username: item.userInfo.account, //好友昵称
+                                        username: item.userInfo.nickname, //好友昵称
                                         groupid: group, //所在的分组id
                                         id: item.from,//好友ID
-                                        sign: item.userInfo.signature //好友签名
+                                        sign: item.userInfo.signature, //好友签名
+                                        status: item.userInfo.status
                                     });
                                     parent.layer.close(index);
                                     $(event.target).parent().html('<span>已同意</span>');

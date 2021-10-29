@@ -83,8 +83,8 @@
                 right: '0px',//用于设定主面板右偏移量。该参数可避免遮盖你页面右下角已经的bar，默认 0px
                 minRight: '', //用户控制聊天面板最小化时、及新消息提示层的相对right的px坐标。默认居中
                 initSkin: skin,//设置初始背景。可设置./layui/css/modules/layim/skin目录下的图片文件名.默认为空字符
-                isAudio: false,//是否开启聊天工具栏音频，默认 false
-                isVideo: false,//是否开启开启聊天工具栏视频，默认 false
+                isAudio: true,//是否开启聊天工具栏音频，默认 false
+                isVideo: true,//是否开启开启聊天工具栏视频，默认 false
                 notice: true, //是否开启桌面消息提醒，即在浏览器之外的提醒,默认 false
                 voice: 'default.mp3', //设定消息提醒的声音文件（所在目录：./layui/css/modules/layim/voice/）若不开启，设置 false 即可 默认 default.mp3
                 isfriend: true, //是否开启好友, 默认 ture
@@ -119,14 +119,24 @@
             //触发在线状态切换
             layim.on('online', function (status) {
                 console.log(status); //获得online或者hide
-                toolkit.request.post({'url': '/chat/online', data: {value: status}})
+                toolkit.request.post({
+                    url: '/chat/online',
+                    data: {
+                        value: status
+                    }
+                })
             });
 
             //触发修改签名
             //当主面板的签名被改动后触发，并返回新的签名
             layim.on('sign', function (value) {
                 console.log(value); //获得新的签名
-                toolkit.request.post({'url': '/chat/sign', 'data': {value: value}})
+                toolkit.request.post({
+                    url: '/chat/sign',
+                    data: {
+                        value: value
+                    }
+                })
             });
 
             //触发更换背景皮肤
@@ -134,7 +144,12 @@
             layim.on('setSkin', function (filename, src) {
                 console.log(filename); //获得文件名，如：1.jpg
                 console.log(src); //获得背景路径，如：http://res.layui.com/layui/src/css/modules/layim/skin/1.jpg
-                toolkit.request.post({'url': '/chat/setSkin', 'data': {value: src}})
+                toolkit.request.post({
+                    url: '/chat/setSkin',
+                    data: {
+                        value: filename
+                    }
+                })
             });
 
             //触发发送的消息
@@ -143,7 +158,10 @@
                 //res.mine 包含我发送的消息及我的信息
                 //res.to 对方的信息; type聊天类型，一般分friend和group两种，group即群聊
                 console.log(res);
-                toolkit.request.post({'url': '/chat/sendMessage', 'data': res})
+                toolkit.request.post({
+                    url: '/chat/sendMessage',
+                    data: res
+                })
             });
 
             //触发查看群员
@@ -169,7 +187,8 @@
                     }
                 } else if (type === 'group') {
                     toolkit.request.post({
-                        'url': '/chat/enterGroup', data: {
+                        url: '/chat/enterGroup',
+                        data: {
                             system: true,
                             id: obj.data.id,
                             type: type,
@@ -182,7 +201,10 @@
             //服务端设定多少秒内没收到心跳关闭连接
             //客户端定时(间隔最好小于60秒)向服务端发送心跳
             setInterval(function () {
-                socket.send('Hi Server, I am LayIM! Ping! Ping! Ping!')
+                socket.send(JSON.stringify({
+                    emit: 'ping',
+                    data: 'Hi Server, I am LayIM! Ping! Ping! Ping!'
+                }))
             }, 30000);
         };
 
@@ -192,25 +214,30 @@
             let res = JSON.parse(evt.data);
             console.log(res);
             switch (res.emit) {
+                //绑定uid和clientId
                 case 'bind':
-                    toolkit.request.post({'url': '/chat/bind', data: res.data});
+                    toolkit.request.post({
+                        url: '/chat/bind',
+                        data: res.data
+                    });
                     break;
+                //触发更新好友列表离线状态
                 case 'setFriendStatus':
-                    //更新好友列表离线状态
                     layim.setFriendStatus(res.data.id, res.data.status);
                     break;
+                //触发接收聊天消息
                 case 'getMessage':
-                    //检测到WebSocket事件后，执行layim的内置方法：layim.getMessage(options)
                     layim.getMessage(res.data);
                     break;
+                //触发消息盒子提醒
                 case 'msgbox':
-                    //消息盒子 在主面板的消息盒子icon上不断显隐提示，直到点击后自动消失
                     res.data.count && layim.msgbox(res.data.count);
                     break;
+                //触发添加好友或群到主面板
                 case 'addList':
-                    //添加好友或群到主面板
                     layim.addList(res.data);
                     break;
+                //心跳
                 case 'pong':
                     console.log(res.data);
                     break;
@@ -220,6 +247,7 @@
         //链接关闭触发
         socket.onclose = function (evt) {
             console.log('socket onclose');
+            toolkit.msg.error(socketName + ' 连接已关闭');
         };
 
         //出错时触发

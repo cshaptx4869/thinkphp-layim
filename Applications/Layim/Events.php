@@ -5,6 +5,7 @@
  * 如果发现业务卡死，可以将下面declare打开（去掉//注释），并执行php start_for_linux.php reload
  * 然后观察一段时间workerman.log看是否有process_timeout异常
  */
+
 //declare(ticks=1);
 
 use GatewayWorker\Lib\Gateway;
@@ -32,7 +33,6 @@ class Events
         ]));
     }
 
-    //
     /**
      * 当客户端发来消息时触发
      * 集合 TP 等框架时，GatewayWorker建议不做任何业务逻辑，onMessage留空即可
@@ -41,6 +41,16 @@ class Events
      */
     public static function onMessage($clientId, $message)
     {
+        $data = json_decode($message, true);
+        switch ($data['emit']) {
+            //心跳
+            case 'ping':
+                Gateway::sendToClient($clientId, json_encode([
+                    'emit' => 'pong',
+                    'data' => 'Hi Client, I am Active! Pong! Pong! Pong!'
+                ]));
+                break;
+        }
     }
 
     /**

@@ -29,7 +29,7 @@ thinkphp-layim
 5. 执行命令 **`php think run -p 8888`**，启动内置服务器。语法参照 [thinkphp6](https://www.kancloud.cn/manual/thinkphp6_0/1037479) 手册
 6. **windows** 环境双击 **`start_for_win.bat`** 或者 **linux**环境执行命令 **`php start_for_linux.php start`**
 7. 访问后台 **`http://127.0.0.1:8888`**
-8. 输入账号登录（ 测试账号 `cshaptx4869`、`xianxin`。密码都是 123456 ）
+8. 输入账号登录（ 测试账号 `cshaptx4869`、`xianxin`。密码都是 123456。当然也可以自己注册 ）
 
 > **`Applications/Layim/config.php`** 可修改 GatewayWorker 的配置
 >
@@ -43,21 +43,37 @@ thinkphp-layim
 
 ![Snipaste_2021-10-25_11-52-37.png](https://i.loli.net/2021/10/25/8t6yUrgbdl5DxIH.png)
 
-- 账号 `cshaptx4869` 登录后效果
+- 申请加好友
 
-![2.jpg](https://i.loli.net/2021/10/24/zxAYadISGJkbriQ.jpg)
+![申请加好友.png](https://i.loli.net/2021/10/29/CURMIFcj36qZ4eG.png)
 
-- 向账号 `xianxin` 发起聊天
+- 同意加好友申请
 
-![3.jpg](https://i.loli.net/2021/10/24/E1nRqpBr4OjHUCa.jpg)
+![同意加好友.png](https://i.loli.net/2021/10/29/3mnrZquCDs5ykSo.png)
 
-- 账号 `xianxin` 收到消息提示
+- 和好友聊天
 
-![4.jpg](https://i.loli.net/2021/10/24/RCTHj5b3FOoS2yv.jpg)
+![聊天.png](https://i.loli.net/2021/10/29/btTBvzKGaMY7JSO.png)
 
-- 账号 `xianxin` 点开消息面板
+- 申请加群
 
-![4jpg.jpg](https://i.loli.net/2021/10/24/Pxc23Now6rzvIM5.jpg)
+![加群请求.png](https://i.loli.net/2021/10/29/aJ4SIHDAx9ynFNK.png)
+
+- 消息盒子通知
+
+![好友加群提示.png](https://i.loli.net/2021/10/29/NOxJM6j94iodQmL.png)
+
+- 同意加群申请
+
+![同意加群.png](https://i.loli.net/2021/10/29/SYo8QeBUxaz2TJC.png)
+
+- 系统通知
+
+![好友同意通知.png](https://i.loli.net/2021/10/29/iwxdDAZRrqblFJI.png)
+
+- 群聊
+
+![群聊1.png](https://i.loli.net/2021/10/29/1PJVea3Qy68g7cl.png)
 
 
 

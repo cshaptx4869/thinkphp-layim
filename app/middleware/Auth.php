@@ -8,7 +8,9 @@ use think\Request;
 class Auth
 {
     protected $whitelist = [
-        'login/checkin',
+        'login/signin',
+        'login/signup',
+        'login/forget',
         'login/captcha',
     ];
 
@@ -23,9 +25,9 @@ class Auth
         $userInfo = session('userInfo');
         $requestPath = strtolower($request->controller() . '/' . $request->action());
         if ((!in_array($requestPath, $this->whitelist)) && empty($userInfo)) {
-            return redirect('login/checkin');
+            return redirect('/login/signIn');
         }
-        if ($requestPath === 'login/checkin' && $userInfo) {
+        if ($requestPath === 'login/signIn' && $userInfo) {
             return redirect('/');
         }
 

@@ -92,4 +92,14 @@ class Toolkit
 
         return $newArr;
     }
+
+    /**
+     * 随机字符串
+     * @param int $length
+     * @return false|string
+     */
+    public static function randStr($length = 6)
+    {
+        return substr(str_shuffle(join('', array_merge(range('a', 'z'), range('A', 'Z'), range(0, 9)))), 0, $length);
+    }
 }

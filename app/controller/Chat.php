@@ -13,13 +13,18 @@ use app\model\Record;
 use app\model\Skin;
 use Fairy\Toolkit;
 use GatewayClient\Gateway;
-use think\db\Query;
 use think\facade\Db;
 
 class Chat extends BaseController
 {
     const SOCKET_NAME = 'ws://127.0.0.1:7272';
     const REGISTER_ADDRESS = '127.0.0.1:1236';
+
+    //事件
+    const EMIT_GET_MESSAGE = 'getMessage';
+    const EMIT_SET_FRIEND_STATUS = 'setFriendStatus';
+    const EMIT_MSGBOX = 'msgbox';
+    const EMIT_ADD_LIST = 'addList';
 
     public function initialize()
     {
@@ -34,7 +39,7 @@ class Chat extends BaseController
     public function index()
     {
         $skin = Skin::where('member_id', $this->userInfo['id'])
-            ->value('url', '');
+            ->value('filename', '');
 
         return view('', [
             'socket_name' => self::SOCKET_NAME,
@@ -64,7 +69,7 @@ class Chat extends BaseController
         $memberObj = Member::find($this->userInfo['id']);
         $memberObj->status == Member::STATUS_ONLINE && $this->notifyFriendOnlineStatus();
         //消息盒子通知
-        Gateway::sendToUid($this->userInfo['id'], $this->makeMessage('msgbox', [
+        Gateway::sendToUid($this->userInfo['id'], $this->makeMessage(self::EMIT_MSGBOX, [
             'count' => Msgbox::getUnreadCountByMemberId($this->userInfo['id'])
         ]));
 
@@ -236,7 +241,7 @@ class Chat extends BaseController
                 //好友在线
                 if (Gateway::isUidOnline($to['id'])) {
                     $toMemberObj = Member::find($to['id']);
-                    Gateway::sendToUid($to['id'], $this->makeMessage('getMessage', [
+                    Gateway::sendToUid($to['id'], $this->makeMessage(self::EMIT_GET_MESSAGE, [
                         //来自于用户的聊天消息，它必须接受以下字段
                         'username' => $mine['username'],//消息来源用户名
                         'avatar' => $mine['avatar'],//消息来源用户头像
@@ -251,7 +256,7 @@ class Chat extends BaseController
 
                     //好友隐身
                     if ($toMemberObj->status == Member::STATUS_HIDE) {
-                        Gateway::sendToUid($mine['id'], $this->makeMessage('getMessage', [
+                        Gateway::sendToUid($mine['id'], $this->makeMessage(self::EMIT_GET_MESSAGE, [
                             //来自于系统的聊天面板的消息
                             'system' => true,//系统消息
                             'id' => $to['id'], //聊天窗口ID，即跟谁聊天
@@ -261,7 +266,7 @@ class Chat extends BaseController
                     }
                 } else {
                     //好友离线
-                    Gateway::sendToUid($mine['id'], $this->makeMessage('getMessage', [
+                    Gateway::sendToUid($mine['id'], $this->makeMessage(self::EMIT_GET_MESSAGE, [
                         //来自于系统的聊天面板的消息
                         'system' => true,//系统消息
                         'id' => $to['id'], //聊天窗口ID，即跟谁聊天
@@ -270,7 +275,7 @@ class Chat extends BaseController
                     ]));
                 }
             } else {
-                Gateway::sendToUid($to['id'], $this->makeMessage('getMessage', [
+                Gateway::sendToUid($to['id'], $this->makeMessage(self::EMIT_GET_MESSAGE, [
                     'system' => true,
                     'id' => $to['id'], //聊天窗口ID，即跟谁聊天
                     'type' => $to['type'],
@@ -282,7 +287,7 @@ class Chat extends BaseController
             $groupStatus = Group::where('id', $to['id'])->value('group_status');
             //群禁言
             if ($groupStatus) {
-                Gateway::sendToUid($mine['id'], $this->makeMessage('getMessage', [
+                Gateway::sendToUid($mine['id'], $this->makeMessage(self::EMIT_GET_MESSAGE, [
                     'system' => true,
                     'id' => $to['id'], //聊天窗口ID，即跟谁聊天
                     'type' => $to['type'],
@@ -292,7 +297,7 @@ class Chat extends BaseController
                 $status = GroupMember::where('member_id', $mine['id'])->value('status');
                 //用户禁言
                 if ($status) {
-                    Gateway::sendToUid($mine['id'], $this->makeMessage('getMessage', [
+                    Gateway::sendToUid($mine['id'], $this->makeMessage(self::EMIT_GET_MESSAGE, [
                         'system' => true,
                         'id' => $to['id'], //聊天窗口ID，即跟谁聊天
                         'type' => $to['type'],
@@ -306,7 +311,7 @@ class Chat extends BaseController
                         ->column('member_id');
                     foreach ($memberIds as $memberId) {
                         if (Gateway::isUidOnline($memberId)) {
-                            Gateway::sendToUid($memberId, $this->makeMessage('getMessage', [
+                            Gateway::sendToUid($memberId, $this->makeMessage(self::EMIT_GET_MESSAGE, [
                                 'username' => $mine['username'],
                                 'avatar' => $mine['avatar'],
                                 'id' => $to['id'],
@@ -340,7 +345,7 @@ class Chat extends BaseController
             ->column('member_id');
         foreach ($memberIds as $memberId) {
             if (Gateway::isUidOnline($memberId)) {
-                Gateway::sendToUid($memberId, $this->makeMessage('getMessage', $post));
+                Gateway::sendToUid($memberId, $this->makeMessage(self::EMIT_GET_MESSAGE, $post));
             }
         }
 
@@ -409,18 +414,24 @@ class Chat extends BaseController
     public function setSkin()
     {
         $post = $this->request->post();
-        $skin = Db::name('skin')
-            ->where('id', $this->userInfo['id'])
-            ->find();
-        if (!$skin) {
-            Db::name('skin')->insert([
+        $rule = [
+            'value' => 'require'
+        ];
+        try {
+            $this->validate($post, $rule);
+        } catch (\Exception $e) {
+            return json(Toolkit::error($e->getMessage()));
+        }
+
+        $skinObj = Skin::where('member_id', $this->userInfo['id'])->find();
+        if (!$skinObj) {
+            Skin::create([
                 'member_id' => $this->userInfo['id'],
-                'url' => $post['value']
+                'filename' => $post['value']
             ]);
         } else {
-            Db::name('skin')
-                ->where('member_id', $this->userInfo['id'])
-                ->update(['url' => $post['value']]);
+            $skinObj->filename = $post['value'];
+            $skinObj->save();
         }
 
         return json(Toolkit::success());
@@ -527,7 +538,7 @@ class Chat extends BaseController
         }
         Msgbox::create($post);
         if (Gateway::isUidOnline($post['to'])) {
-            Gateway::sendToUid($post['to'], $this->makeMessage('msgbox', [
+            Gateway::sendToUid($post['to'], $this->makeMessage(self::EMIT_MSGBOX, [
                 'count' => Msgbox::getUnreadCountByMemberId($post['to'])
             ]));
         }
@@ -558,7 +569,7 @@ class Chat extends BaseController
             if ($list) {
                 //发送者信息
                 $fromArr = Member::whereIn('id', array_column($list, 'from'))
-                    ->field('id,account,avatar,signature')
+                    ->fieldRaw("id,account,nickname,avatar,signature,if(status=1,'online','offline') status")
                     ->select()
                     ->toArray();
                 $fromArrMap = Toolkit::setArrayIndex($fromArr, 'id');
@@ -635,7 +646,8 @@ class Chat extends BaseController
             ]);
 
             //发送同意添加好友通知
-            $myMemberInfo = Member::find($this->userInfo['id']);
+            $myMemberInfo = Member::fieldRaw("id,account,nickname,avatar,signature,if(status=1,'online','offline') status")
+                ->find($this->userInfo['id']);
             Msgbox::create([
                 'type' => Msgbox::TYPE_MAKE_FRIEND_SYSTEM,
                 'status' => Msgbox::STATUS_IGNORED,
@@ -645,17 +657,18 @@ class Chat extends BaseController
             ]);
             if (Gateway::isUidOnline($msgboxObj->from)) {
                 //通知好友有新消息
-                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage(self::EMIT_MSGBOX, [
                     'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
                 ]));
                 //通知好友更新列表
-                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('addList', [
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage(self::EMIT_ADD_LIST, [
                     'type' => 'friend', //列表类型，只支持friend和group两种
                     'avatar' => $myMemberInfo->avatar, //好友头像
-                    'username' => $myMemberInfo->account, //好友昵称
+                    'username' => $myMemberInfo->nickname, //好友昵称
                     'groupid' => $msgboxObj->friend_group_id,//所在的分组id
                     'id' => $myMemberInfo->id, //好友ID
-                    'sign' => $myMemberInfo->signature //好友签名
+                    'sign' => $myMemberInfo->signature, //好友签名
+                    'status' => $myMemberInfo->status
                 ]));
             }
         } else {
@@ -677,11 +690,11 @@ class Chat extends BaseController
             ]);
             if (Gateway::isUidOnline($msgboxObj->from)) {
                 //通知好友有新消息
-                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage(self::EMIT_MSGBOX, [
                     'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
                 ]));
                 //通知好友更新列表
-                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('addList', [
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage(self::EMIT_ADD_LIST, [
                     'type' => 'group', //列表类型，只支持friend和group两种
                     'avatar' => $groupInfo->avatar, //群组头像
                     'groupname' => $groupInfo->group_name,//群组名称
@@ -734,7 +747,7 @@ class Chat extends BaseController
             ]);
             if (Gateway::isUidOnline($msgboxObj->from)) {
                 //通知好友有新消息
-                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage(self::EMIT_MSGBOX, [
                     'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
                 ]));
             }
@@ -750,7 +763,7 @@ class Chat extends BaseController
             ]);
             if (Gateway::isUidOnline($msgboxObj->from)) {
                 //通知好友有新消息
-                Gateway::sendToUid($msgboxObj->from, $this->makeMessage('msgbox', [
+                Gateway::sendToUid($msgboxObj->from, $this->makeMessage(self::EMIT_MSGBOX, [
                     'count' => Msgbox::getUnreadCountByMemberId($msgboxObj->from)
                 ]));
             }
@@ -828,7 +841,7 @@ class Chat extends BaseController
             $statusText = $online ? 'online' : 'offline';
             foreach ($friendMemberIds as $memberId) {
                 if (Gateway::isUidOnline($memberId)) {
-                    Gateway::sendToUid($memberId, $this->makeMessage('setFriendStatus', [
+                    Gateway::sendToUid($memberId, $this->makeMessage(self::EMIT_SET_FRIEND_STATUS, [
                         'id' => $this->userInfo['id'],
                         'status' => $statusText
                     ]));
