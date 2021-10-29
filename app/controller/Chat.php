@@ -82,6 +82,9 @@ class Chat extends BaseController
      */
     public function offline()
     {
+        $memberObj = Member::find($this->userInfo['id']);
+        $memberObj->status = Member::STATUS_OFFLINE;
+        $memberObj->save();
         $this->notifyFriendOnlineStatus(false);
     }
 
@@ -133,7 +136,7 @@ class Chat extends BaseController
                             'id' => $groupFriend['member_id'],//好友ID
                             'avatar' => $groupFriend['avatar'],//好友头像
                             'sign' => $groupFriend['signature'],//好友签名
-                            'status' => Member::getStatusText($memberInfo->status)//若值为offline代表离线，online或者不填为在线
+                            'status' => Member::getStatusText($groupFriend['status'])//若值为offline代表离线，online或者不填为在线
                         ];
                         unset($groupFriends[$k]);
                     }
