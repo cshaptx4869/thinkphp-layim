@@ -5,7 +5,7 @@ thinkphp-layim
 
 **`Thinkphp6 + GatewayWorker3 + Layim3`** 实现类 QQ 聊天功能。
 
-![work-with-other-mvc-framework.png](https://i.loli.net/2021/10/24/gpYb1iGeZDNE7Iw.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141608_95c0910d_5507348.png)
 
 **总体原则:**
 
@@ -41,39 +41,39 @@ thinkphp-layim
 
 - 双击启动脚本
 
-![Snipaste_2021-10-25_11-52-37.png](https://i.loli.net/2021/10/25/8t6yUrgbdl5DxIH.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141021_3fe409d5_5507348.png)
 
 - 申请加好友
 
-![申请加好友.png](https://i.loli.net/2021/10/29/CURMIFcj36qZ4eG.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141205_48c018d8_5507348.png)
 
 - 同意加好友申请
 
-![同意加好友.png](https://i.loli.net/2021/10/29/3mnrZquCDs5ykSo.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141259_f27ef315_5507348.png)
 
 - 和好友聊天
 
-![聊天.png](https://i.loli.net/2021/10/29/btTBvzKGaMY7JSO.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141325_aad753c0_5507348.png)
 
 - 申请加群
 
-![加群请求.png](https://i.loli.net/2021/10/29/aJ4SIHDAx9ynFNK.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141350_88671695_5507348.png)
 
 - 消息盒子通知
 
-![好友加群提示.png](https://i.loli.net/2021/10/29/NOxJM6j94iodQmL.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141411_15f65da7_5507348.png)
 
 - 同意加群申请
 
-![同意加群.png](https://i.loli.net/2021/10/29/SYo8QeBUxaz2TJC.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141428_11540ad9_5507348.png)
 
 - 系统通知
 
-![好友同意通知.png](https://i.loli.net/2021/10/29/iwxdDAZRrqblFJI.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141444_a97f4090_5507348.png)
 
 - 群聊
 
-![群聊1.png](https://i.loli.net/2021/10/29/1PJVea3Qy68g7cl.png)
+![](https://images.gitee.com/uploads/images/2021/1224/141458_4896f6a2_5507348.png)
 
 
 
